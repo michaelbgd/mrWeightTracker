@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7-Segment OCR Test Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        #container {
+            position: relative;
+            margin-bottom: 20px;
+            border: 4px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        video {
+            display: block;
+            width: 640px;
+            height: 480px;
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        .controls {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 150px;
+        }
+        .result-container {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+        #result {
+            font-family: monospace;
+            font-weight: bold;
+            color: #28a745;
+            font-size: 1.2em;
+        }
+        .debug-header {
+            width: 90%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        #debug {
+            white-space: pre-wrap;
+            font-family: "Courier New", Courier, monospace;
+            background: #2b2b2b;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>7-Segment OCR Test</h1>
+    <p>Align your scale's digits with the green boxes and red points.</p>
+
+    <div id="container">
+        <video id="video" width="640" height="480" autoplay playsinline></video>
+        <canvas id="overlay" width="640" height="480"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="startBtn">Start Camera</button>
+        <button id="captureBtn" disabled>Capture & Decode</button>
+        <div class="slider-container">
+            <label for="threshold">Brightness Threshold: <span id="thresholdVal">128</span></label>
+            <input type="range" id="threshold" min="0" max="255" value="128">
+        </div>
+    </div>
+
+    <div class="result-container">
+        Last Reading: <span id="result">----</span>
+    </div>
+
+    <div class="debug-header">
+        <h3>Debug Output</h3>
+        <small>Pattern: a,b,c,d,e,f,g</small>
+    </div>
+    <div id="debug">Waiting for capture...</div>
+
+    <!-- Offscreen canvas for frame processing -->
+    <canvas id="hiddenCanvas" width="640" height="480" style="display:none;"></canvas>
+
+    <script>
+        /**
+         * CONFIGURATION
+         * Modify these values to tune the app for your specific scale.
+         */
+        
+        // Coordinates and size of the bounding box for each digit (in pixels)
+        const digitBoxes = [
+            { x: 150, y: 180, w: 70, h: 110 },
+            { x: 230, y: 180, w: 70, h: 110 },
+            { x: 310, y: 180, w: 70, h: 110 },
+            { x: 390, y: 180, w: 70, h: 110 }
+        ];
+
+        // Relative positions of the 7 segments (a-g) within each digit box (0.0 to 1.0)
+        // Standard 7-segment layout:
+        //    -a-
+        //  f|   |b
+        //    -g-
+        //  e|   |c
+        //    -d-
+        const SEGMENTS = [
+            { name: 'a', x: 0.5,  y: 0.1 },
+            { name: 'b', x: 0.85, y: 0.3 },
+            { name: 'c', x: 0.85, y: 0.7 },
+            { name: 'd', x: 0.5,  y: 0.9 },
+            { name: 'e', x: 0.15, y: 0.7 },
+            { name: 'f', x: 0.15, y: 0.3 },
+            { name: 'g', x: 0.5,  y: 0.5 }
+        ];
+
+        // Map of 7-bit patterns to digits
+        const SEG_PATTERN_TO_DIGIT = {
+            "1111110": "0",
+            "0110000": "1",
+            "1101101": "2",
+            "1111001": "3",
+            "0110011": "4",
+            "1011011": "5",
+            "1011111": "6",
+            "1110000": "7",
+            "1111111": "8",
+            "1111011": "9",
+            "0000000": " "  // Blank digit
+        };
+
+        const SAMPLE_RADIUS = 3; // How many pixels around the center to sample for brightness
+
+        // --- UI & State ---
+        const video = document.getElementById('video');
+        const overlay = document.getElementById('overlay');
+        const overlayCtx = overlay.getContext('2d');
+        const hiddenCanvas = document.getElementById('hiddenCanvas');
+        const hiddenCtx = hiddenCanvas.getContext('2d');
+        
+        const startBtn = document.getElementById('startBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const thresholdInput = document.getElementById('threshold');
+        const thresholdVal = document.getElementById('thresholdVal');
+        const resultDisplay = document.getElementById('result');
+        const debugDisplay = document.getElementById('debug');
+
+        let threshold = parseInt(thresholdInput.value);
+
+        // --- Initialization ---
+
+        thresholdInput.addEventListener('input', (e) => {
+            threshold = parseInt(e.target.value);
+            thresholdVal.textContent = threshold;
+        });
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                // Request back camera specifically if available
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+                captureBtn.disabled = false;
+                startBtn.disabled = true;
+                startOverlayLoop();
+            } catch (err) {
+                console.error("Camera error: ", err);
+                alert("Could not access camera. Ensure you are using HTTPS or localhost.");
+            }
+        });
+
+        function startOverlayLoop() {
+            function update() {
+                overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+                
+                digitBoxes.forEach((box, i) => {
+                    // Draw green digit box
+                    overlayCtx.strokeStyle = 'rgba(0, 255, 0, 0.6)';
+                    overlayCtx.lineWidth = 2;
+                    overlayCtx.strokeRect(box.x, box.y, box.w, box.h);
+                    
+                    // Label the box
+                    overlayCtx.fillStyle = 'rgba(0, 255, 0, 0.9)';
+                    overlayCtx.font = '12px sans-serif';
+                    overlayCtx.fillText(`Digit ${i+1}`, box.x, box.y - 5);
+                    
+                    // Draw red segment sampling points
+                    SEGMENTS.forEach(seg => {
+                        const sx = box.x + seg.x * box.w;
+                        const sy = box.y + seg.y * box.h;
+                        
+                        overlayCtx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                        overlayCtx.beginPath();
+                        overlayCtx.arc(sx, sy, 3, 0, Math.PI * 2);
+                        overlayCtx.fill();
+                    });
+                });
+                
+                requestAnimationFrame(update);
+            }
+            update();
+        }
+
+        captureBtn.addEventListener('click', () => {
+            // 1. Capture the current video frame to the hidden canvas
+            hiddenCtx.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+            const frameData = hiddenCtx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+            
+            let fullResultString = "";
+            let debugLog = `DECODE AT ${new Date().toLocaleTimeString()}\n`;
+            debugLog += `Threshold: ${threshold}\n`;
+            debugLog += `----------------------------------------\n`;
+            
+            // 2. Process each digit box
+            digitBoxes.forEach((box, bIndex) => {
+                let bitPattern = "";
+                debugLog += `DIGIT ${bIndex + 1}:\n`;
+                
+                // 3. Sample each of the 7 segments
+                SEGMENTS.forEach(seg => {
+                    const sx = Math.floor(box.x + seg.x * box.w);
+                    const sy = Math.floor(box.y + seg.y * box.h);
+                    
+                    const brightness = getAverageBrightness(frameData, sx, sy, SAMPLE_RADIUS);
+                    const isOn = brightness >= threshold ? "1" : "0";
+                    bitPattern += isOn;
+                    
+                    debugLog += `  Seg ${seg.name} (${sx},${sy}): Brightness ${Math.round(brightness).toString().padStart(3)} -> ${isOn}\n`;
+                });
+                
+                // 4. Decode pattern
+                const digit = SEG_PATTERN_TO_DIGIT[bitPattern] || "?";
+                debugLog += `  Pattern: ${bitPattern} -> Decoded: [ ${digit} ]\n\n`;
+                fullResultString += digit;
+            });
+            
+            // 5. Update UI
+            resultDisplay.textContent = fullResultString;
+            debugDisplay.textContent = debugLog;
+            // Scroll to top of debug
+            debugDisplay.scrollTop = 0;
+        });
+
+        /**
+         * Calculates average brightness in a small square around (centerX, centerY).
+         */
+        function getAverageBrightness(imageData, centerX, centerY, radius) {
+            let totalLuminance = 0;
+            let count = 0;
+            
+            const data = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+            
+            for (let y = centerY - radius; y <= centerY + radius; y++) {
+                for (let x = centerX - radius; x <= centerX + radius; x++) {
+                    if (x >= 0 && x < width && y >= 0 && y < height) {
+                        const idx = (y * width + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx + 1];
+                        const b = data[idx + 2];
+                        
+                        // Perceptual luminance formula
+                        const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                        totalLuminance += luminance;
+                        count++;
+                    }
+                }
+            }
+            
+            return count > 0 ? totalLuminance / count : 0;
+        }
+
+    </script>
+</body>
+</html>
