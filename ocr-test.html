@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scale OCR Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            max-width: 420px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .scan-btn {
+            width: 100%;
+            padding: 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .scan-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .preview {
+            display: none;
+            margin-top: 20px;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .preview.active { display: flex; }
+
+        .preview img {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            max-height: 220px;
+            object-fit: contain;
+            background: #f9f9f9;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            min-height: 20px;
+        }
+
+        .result {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 700;
+            color: #667eea;
+            letter-spacing: -1px;
+            min-height: 60px;
+        }
+
+        .debug {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 12px;
+            font-family: monospace;
+            color: #666;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .preprocessed-label {
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+        }
+
+        .preprocessed-preview {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            max-height: 220px;
+            object-fit: contain;
+            background: #000;
+        }
+
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Scale OCR Test</h1>
+
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+        <button class="scan-btn" id="scanBtn">📷 Take photo of scale</button>
+        <canvas id="canvas"></canvas>
+
+        <div class="preview" id="preview">
+            <img id="original" alt="Original">
+            <p class="preprocessed-label">Preprocessed (what Tesseract sees):</p>
+            <img id="preprocessed" alt="Preprocessed">
+            <div class="status" id="status"></div>
+            <div class="result" id="result"></div>
+            <div class="debug" id="debug"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script>
+        function preprocessImage(imgEl) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const MAX = 1200;
+            let w = imgEl.naturalWidth;
+            let h = imgEl.naturalHeight;
+            if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+            if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+
+            canvas.width  = w;
+            canvas.height = h;
+            ctx.drawImage(imgEl, 0, 0, w, h);
+
+            const imageData = ctx.getImageData(0, 0, w, h);
+            const data = imageData.data;
+
+            // Greyscale
+            for (let i = 0; i < data.length; i += 4) {
+                const grey = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+                data[i] = data[i+1] = data[i+2] = grey;
+            }
+
+            // Adaptive threshold
+            let sum = 0;
+            for (let i = 0; i < data.length; i += 4) sum += data[i];
+            const mean = sum / (data.length / 4);
+            const threshold = mean * 0.85;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const v = data[i] > threshold ? 0 : 255;
+                data[i] = data[i+1] = data[i+2] = v;
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            return canvas.toDataURL('image/png');
+        }
+
+        async function scan() {
+            const file = document.getElementById('cameraInput').files[0];
+            if (!file) return;
+
+            const btn     = document.getElementById('scanBtn');
+            const preview = document.getElementById('preview');
+            const original     = document.getElementById('original');
+            const preprocessed = document.getElementById('preprocessed');
+            const status  = document.getElementById('status');
+            const result  = document.getElementById('result');
+            const debug   = document.getElementById('debug');
+
+            btn.disabled = true;
+            result.textContent = '';
+            debug.textContent = '';
+            preview.classList.add('active');
+
+            // Show original
+            original.src = URL.createObjectURL(file);
+            await new Promise((res, rej) => { original.onload = res; original.onerror = rej; });
+
+            status.textContent = 'Preprocessing…';
+
+            const processedDataUrl = preprocessImage(original);
+            preprocessed.src = processedDataUrl;
+
+            status.textContent = 'Running OCR…';
+
+            try {
+                const res = await Tesseract.recognize(processedDataUrl, 'eng', {
+                    tessedit_char_whitelist: '0123456789.',
+                    tessedit_pageseg_mode: '7',
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            status.textContent = `OCR: ${Math.round(m.progress * 100)}%`;
+                        }
+                    },
+                });
+
+                const raw     = res.data.text.trim();
+                const cleaned = raw.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+                const value   = parseFloat(cleaned);
+
+                debug.textContent = [
+                    `raw text:  "${raw}"`,
+                    `cleaned:   "${cleaned}"`,
+                    `parsed:    ${value}`,
+                    `confidence: ${res.data.confidence.toFixed(1)}%`,
+                ].join('\n');
+
+                if (!isNaN(value) && value > 0 && value < 500) {
+                    status.textContent = '✅ Detected:';
+                    result.textContent = value.toFixed(1) + ' kg';
+                } else {
+                    status.textContent = '❌ Could not read a number';
+                    result.textContent = '';
+                }
+            } catch (err) {
+                status.textContent = '❌ OCR error';
+                debug.textContent = err.message;
+            } finally {
+                btn.disabled = false;
+                document.getElementById('cameraInput').value = '';
+            }
+        }
+
+        document.getElementById('scanBtn').addEventListener('click', () => {
+            document.getElementById('cameraInput').click();
+        });
+        document.getElementById('cameraInput').addEventListener('change', scan);
+    </script>
+</body>
+</html>
