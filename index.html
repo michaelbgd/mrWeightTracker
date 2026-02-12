@@ -196,13 +196,19 @@
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
-                callback: async (response) => {
+                callback: (response) => {
+                    // Use a plain (non-async) callback to avoid any timing issues,
+                    // then kick off the async work separately
                     if (response.error) {
                         showStatus('Authentication failed: ' + response.error, 'error');
                         return;
                     }
                     accessToken = response.access_token;
-                    await handleAuthSuccess();
+                    console.log('Token received, length:', accessToken?.length);
+                    handleAuthSuccess().catch(err => {
+                        console.error('handleAuthSuccess failed:', err);
+                        showStatus('Sign-in error: ' + err.message, 'error');
+                    });
                 },
             });
         }
@@ -211,6 +217,10 @@
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('trackerSection').classList.add('active');
 
+            // Small delay to ensure the token is fully available in the closure
+            await new Promise(r => setTimeout(r, 100));
+
+            console.log('Fetching userinfo with token:', accessToken?.slice(0, 20) + '...');
             const userInfo = await api('https://www.googleapis.com/oauth2/v2/userinfo');
             document.getElementById('userInfo').textContent = `Signed in as ${userInfo.email}`;
 
@@ -256,6 +266,11 @@
 
             if (!weight || weight <= 0) {
                 showStatus('Please enter a valid weight', 'error');
+                return;
+            }
+
+            if (!spreadsheetId) {
+                showStatus('No spreadsheet found — try signing out and back in', 'error');
                 return;
             }
 
