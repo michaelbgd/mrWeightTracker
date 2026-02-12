@@ -133,12 +133,68 @@
         .signout-btn:hover {
             background: #c82333;
         }
+
+        .recent-entries {
+            margin-top: 28px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .recent-entries h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #999;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        .entries-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .entries-table th {
+            text-align: left;
+            color: #aaa;
+            font-weight: 500;
+            padding: 0 8px 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .entries-table th:last-child {
+            text-align: right;
+        }
+
+        .entries-table td {
+            padding: 8px;
+            color: #444;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .entries-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .entries-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .entries-empty {
+            text-align: center;
+            color: #bbb;
+            font-size: 13px;
+            padding: 12px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📊 Weight Tracker</h1>
-        
+
         <div class="auth-section" id="authSection">
             <p style="margin-bottom: 20px; color: #666;">Sign in with Google to track your weight</p>
             <button id="authButton">Sign in with Google</button>
@@ -146,7 +202,7 @@
 
         <div class="tracker-section" id="trackerSection">
             <div class="user-info" id="userInfo"></div>
-            
+
             <div class="input-group">
                 <label for="weight">Weight (kg)</label>
                 <input type="number" id="weight" step="0.1" placeholder="e.g., 75.5" required>
@@ -156,11 +212,15 @@
             <button class="signout-btn" id="signoutButton">Sign Out</button>
 
             <div class="status" id="status"></div>
+
+            <div class="recent-entries">
+                <h3>Recent Entries</h3>
+                <div id="entriesContainer"><p class="entries-empty">No entries yet</p></div>
+            </div>
         </div>
     </div>
 
     <script>
-        // TODO: Replace with your actual Google Client ID
         const CLIENT_ID = '27682382506-llvoptiiot7beo02kp2uvvp8ptbkv80s.apps.googleusercontent.com';
         const SCOPES = [
             'https://www.googleapis.com/auth/spreadsheets',
@@ -199,9 +259,6 @@
             localStorage.removeItem('weightTrackerToken');
         }
 
-        // Silently get a fresh token without any popup.
-        // GIS will use the existing Google session cookie — no user interaction needed
-        // as long as the user is still signed into Google in the browser.
         function refreshTokenSilently() {
             return new Promise((resolve, reject) => {
                 const silentClient = google.accounts.oauth2.initTokenClient({
@@ -221,10 +278,8 @@
             });
         }
 
-        // ── Helpers ──────────────────────────────────────────────────────────
+        // ── API helper ────────────────────────────────────────────────────────
 
-        // Thin wrapper: every API call goes through here so the Bearer token
-        // is always attached and errors are surfaced consistently.
         async function api(url, options = {}, isRetry = false) {
             const res = await fetch(url, {
                 ...options,
@@ -235,7 +290,6 @@
                 },
             });
 
-            // Token expired — refresh silently and retry once
             if (res.status === 401 && !isRetry) {
                 await refreshTokenSilently();
                 return api(url, options, true);
@@ -248,32 +302,28 @@
             return res.json();
         }
 
-        // ── Auth ─────────────────────────────────────────────────────────────
+        // ── Auth ──────────────────────────────────────────────────────────────
 
         function gisLoaded() {
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
-                prompt: '',   // empty = silent refresh if already consented
+                prompt: '',
                 callback: (response) => {
                     if (response.error) {
-                        // Silent refresh failed — fall back to showing the button
                         clearToken();
                         document.getElementById('authSection').style.display = 'block';
                         return;
                     }
                     saveToken(response.access_token);
                     handleAuthSuccess().catch(err => {
-                        console.error('handleAuthSuccess failed:', err);
                         showStatus('Sign-in error: ' + err.message, 'error');
                     });
                 },
             });
 
-            // If we have a valid stored token, skip the popup entirely
             if (loadToken()) {
                 handleAuthSuccess().catch(() => {
-                    // Token was stale despite expiry check — get a new one silently
                     tokenClient.requestAccessToken();
                 });
             }
@@ -289,9 +339,11 @@
             if (!spreadsheetId) {
                 await createSpreadsheet();
             }
+
+            await fetchRecentEntries();
         }
 
-        // ── Sheets API ───────────────────────────────────────────────────────
+        // ── Sheets API ────────────────────────────────────────────────────────
 
         async function createSpreadsheet() {
             try {
@@ -306,20 +358,54 @@
                 spreadsheetId = sheet.spreadsheetId;
                 localStorage.setItem('weightTrackerSheetId', spreadsheetId);
 
-                // Write header row
                 await api(
                     `${SHEETS_BASE}/${spreadsheetId}/values/${SHEET_NAME}!A1:B1?valueInputOption=RAW`,
                     {
                         method: 'PUT',
-                        body: JSON.stringify({ values: [['Date', 'Weight (kg)']] }),
+                        body: JSON.stringify({ values: [['Timestamp', 'Weight (kg)']] }),
                     }
                 );
 
                 showStatus('Spreadsheet created in your Google Drive!', 'success');
             } catch (err) {
-                console.error(err);
                 showStatus('Failed to create spreadsheet: ' + err.message, 'error');
             }
+        }
+
+        async function fetchRecentEntries() {
+            if (!spreadsheetId) return;
+            try {
+                const data = await api(
+                    `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(SHEET_NAME + '!A:B')}`
+                );
+                const rows = (data.values || []).slice(1); // skip header
+                renderEntries(rows.slice(-5).reverse());
+            } catch (err) {
+                console.error('Failed to fetch entries:', err);
+            }
+        }
+
+        function renderEntries(rows) {
+            const container = document.getElementById('entriesContainer');
+            if (!rows.length) {
+                container.innerHTML = '<p class="entries-empty">No entries yet</p>';
+                return;
+            }
+            container.innerHTML = `
+                <table class="entries-table">
+                    <thead>
+                        <tr><th>Timestamp</th><th>kg</th></tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(([ts, kg]) => `
+                            <tr>
+                                <td>${ts ?? '—'}</td>
+                                <td>${kg ?? '—'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         }
 
         async function submitWeight() {
@@ -341,22 +427,31 @@
             submitButton.textContent = 'Submitting…';
 
             try {
+                // ISO 8601 with local timezone offset e.g. 2026-02-12T19:04:00+01:00
                 const now = new Date();
-                const dateStr = now.toISOString().split('T')[0];
-                const timeStr = now.toLocaleTimeString();
+                const offset = -now.getTimezoneOffset();
+                const sign = offset >= 0 ? '+' : '-';
+                const pad = n => String(Math.floor(Math.abs(n))).padStart(2, '0');
+                const timestamp = now.getFullYear()
+                    + '-' + pad(now.getMonth() + 1)
+                    + '-' + pad(now.getDate())
+                    + 'T' + pad(now.getHours())
+                    + ':' + pad(now.getMinutes())
+                    + ':' + pad(now.getSeconds())
+                    + sign + pad(offset / 60) + ':' + pad(offset % 60);
 
                 await api(
                     `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(SHEET_NAME + '!A:B')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
                     {
                         method: 'POST',
-                        body: JSON.stringify({ values: [[`${dateStr} ${timeStr}`, weight]] }),
+                        body: JSON.stringify({ values: [[timestamp, weight]] }),
                     }
                 );
 
                 showStatus('Weight recorded!', 'success');
                 weightInput.value = '';
+                await fetchRecentEntries();
             } catch (err) {
-                console.error(err);
                 showStatus('Failed to save: ' + err.message, 'error');
             } finally {
                 submitButton.disabled = false;
@@ -364,13 +459,14 @@
             }
         }
 
-        // ── UI ───────────────────────────────────────────────────────────────
+        // ── UI ────────────────────────────────────────────────────────────────
 
         function signOut() {
             clearToken();
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('trackerSection').classList.remove('active');
             document.getElementById('weight').value = '';
+            document.getElementById('entriesContainer').innerHTML = '<p class="entries-empty">No entries yet</p>';
             showStatus('', '');
         }
 
@@ -381,7 +477,7 @@
             if (type === 'success') setTimeout(() => { el.className = 'status'; }, 3000);
         }
 
-        // ── Event listeners ──────────────────────────────────────────────────
+        // ── Event listeners ───────────────────────────────────────────────────
 
         document.getElementById('authButton').addEventListener('click', () => {
             if (!window.google?.accounts?.oauth2) {
