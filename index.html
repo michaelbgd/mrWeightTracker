@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Weight Tracker</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    Oxygen, Ubuntu, Cantarell, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 20px;
+            }
+
+            .container {
+                background: white;
+                padding: 40px;
+                border-radius: 16px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                max-width: 400px;
+                width: 100%;
+            }
+
+            h1 {
+                color: #333;
+                margin-bottom: 30px;
+                text-align: center;
+                font-size: 28px;
+            }
+
+            .auth-section {
+                text-align: center;
+                margin-bottom: 20px;
+            }
+
+            .tracker-section {
+                display: none;
+            }
+
+            .tracker-section.active {
+                display: block;
+            }
+
+            .input-group {
+                margin-bottom: 20px;
+            }
+
+            label {
+                display: block;
+                margin-bottom: 8px;
+                color: #555;
+                font-weight: 500;
+            }
+
+            input[type="number"] {
+                width: 100%;
+                padding: 12px;
+                border: 2px solid #e0e0e0;
+                border-radius: 8px;
+                font-size: 16px;
+                transition: border-color 0.3s;
+            }
+
+            input[type="number"]:focus {
+                outline: none;
+                border-color: #667eea;
+            }
+
+            button {
+                width: 100%;
+                padding: 14px;
+                background: #667eea;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+
+            button:hover {
+                background: #5568d3;
+            }
+
+            button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+            }
+
+            .status {
+                margin-top: 15px;
+                padding: 12px;
+                border-radius: 8px;
+                text-align: center;
+                font-size: 14px;
+                display: none;
+            }
+
+            .status.success {
+                background: #d4edda;
+                color: #155724;
+                display: block;
+            }
+
+            .status.error {
+                background: #f8d7da;
+                color: #721c24;
+                display: block;
+            }
+
+            .user-info {
+                text-align: center;
+                margin-bottom: 20px;
+                color: #666;
+                font-size: 14px;
+            }
+
+            .signout-btn {
+                background: #dc3545;
+                margin-top: 10px;
+            }
+
+            .signout-btn:hover {
+                background: #c82333;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>📊 Weight Tracker</h1>
+
+            <div class="auth-section" id="authSection">
+                <p style="margin-bottom: 20px; color: #666">
+                    Sign in with Google to track your weight
+                </p>
+                <button id="authButton">Sign in with Google</button>
+            </div>
+
+            <div class="tracker-section" id="trackerSection">
+                <div class="user-info" id="userInfo"></div>
+
+                <div class="input-group">
+                    <label for="weight">Weight (kg)</label>
+                    <input
+                        type="number"
+                        id="weight"
+                        step="0.1"
+                        placeholder="e.g., 75.5"
+                        required
+                    />
+                </div>
+
+                <button id="submitButton">Submit Weight</button>
+                <button class="signout-btn" id="signoutButton">Sign Out</button>
+
+                <div class="status" id="status"></div>
+            </div>
+        </div>
+
+        <script
+            src="https://accounts.google.com/gsi/client"
+            async
+            defer
+        ></script>
+        <script>
+            const CLIENT_ID =
+                "27682382506-llvoptiiot7beo02kp2uvvp8ptbkv80s.apps.googleusercontent.com";
+            const SCOPES =
+                "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file";
+            const DISCOVERY_DOC =
+                "https://sheets.googleapis.com/$discovery/rest?version=v4";
+
+            // Sheet configuration
+            const SHEET_NAME = "Weight Tracker";
+            let spreadsheetId = localStorage.getItem("weightTrackerSheetId");
+            let tokenClient;
+            let accessToken = null;
+            let gapiInited = false;
+
+            // Initialize the Google API client
+            function gapiLoaded() {
+                gapi.load("client", initializeGapiClient);
+            }
+
+            async function initializeGapiClient() {
+                await gapi.client.init({
+                    discoveryDocs: [DISCOVERY_DOC],
+                });
+                gapiInited = true;
+            }
+
+            // Initialize Google Identity Services
+            function gisLoaded() {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: async (response) => {
+                        if (response.error) {
+                            showStatus("Authentication failed", "error");
+                            return;
+                        }
+                        accessToken = response.access_token;
+                        await handleAuthSuccess();
+                    },
+                });
+            }
+
+            async function handleAuthSuccess() {
+                // Set token on gapi.client so all API calls are authenticated
+                gapi.client.setToken({ access_token: accessToken });
+
+                // Show tracker section
+                document.getElementById("authSection").style.display = "none";
+                document
+                    .getElementById("trackerSection")
+                    .classList.add("active");
+
+                // Get user info
+                const userInfo = await getUserInfo();
+                document.getElementById("userInfo").textContent =
+                    `Signed in as ${userInfo.email}`;
+
+                // Create or verify spreadsheet
+                if (!spreadsheetId) {
+                    await createSpreadsheet();
+                }
+            }
+
+            async function getUserInfo() {
+                const response = await gapi.client.request({
+                    path: "https://www.googleapis.com/oauth2/v2/userinfo",
+                });
+                return response.result;
+            }
+
+            async function createSpreadsheet() {
+                try {
+                    const response =
+                        await gapi.client.sheets.spreadsheets.create({
+                            properties: {
+                                title: "Weight Tracker Data",
+                            },
+                            sheets: [
+                                {
+                                    properties: {
+                                        title: SHEET_NAME,
+                                    },
+                                },
+                            ],
+                        });
+
+                    spreadsheetId = response.result.spreadsheetId;
+                    localStorage.setItem("weightTrackerSheetId", spreadsheetId);
+
+                    // Add headers
+                    await gapi.client.sheets.spreadsheets.values.update({
+                        spreadsheetId: spreadsheetId,
+                        range: `${SHEET_NAME}!A1:B1`,
+                        valueInputOption: "RAW",
+                        resource: {
+                            values: [["Date", "Weight (kg)"]],
+                        },
+                    });
+
+                    showStatus("Spreadsheet created successfully!", "success");
+                } catch (error) {
+                    console.error("Error creating spreadsheet:", error);
+                    showStatus("Failed to create spreadsheet", "error");
+                }
+            }
+
+            async function submitWeight() {
+                const weightInput = document.getElementById("weight");
+                const weight = parseFloat(weightInput.value);
+
+                if (!weight || weight <= 0) {
+                    showStatus("Please enter a valid weight", "error");
+                    return;
+                }
+
+                try {
+                    const submitButton =
+                        document.getElementById("submitButton");
+                    submitButton.disabled = true;
+                    submitButton.textContent = "Submitting...";
+
+                    const now = new Date();
+                    const dateStr = now.toISOString().split("T")[0];
+                    const timeStr = now.toLocaleTimeString();
+
+                    await gapi.client.sheets.spreadsheets.values.append({
+                        spreadsheetId: spreadsheetId,
+                        range: `${SHEET_NAME}!A:B`,
+                        valueInputOption: "RAW",
+                        resource: {
+                            values: [[`${dateStr} ${timeStr}`, weight]],
+                        },
+                    });
+
+                    showStatus("Weight recorded successfully!", "success");
+                    weightInput.value = "";
+                } catch (error) {
+                    console.error("Error submitting weight:", error);
+                    showStatus("Failed to submit weight", "error");
+                } finally {
+                    const submitButton =
+                        document.getElementById("submitButton");
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Submit Weight";
+                }
+            }
+
+            function signOut() {
+                accessToken = null;
+                document.getElementById("authSection").style.display = "block";
+                document
+                    .getElementById("trackerSection")
+                    .classList.remove("active");
+                document.getElementById("weight").value = "";
+                showStatus("", "");
+            }
+
+            function showStatus(message, type) {
+                const statusDiv = document.getElementById("status");
+                statusDiv.textContent = message;
+                statusDiv.className = `status ${type}`;
+
+                if (message && type === "success") {
+                    setTimeout(() => {
+                        statusDiv.className = "status";
+                    }, 3000);
+                }
+            }
+
+            // Event listeners
+            document
+                .getElementById("authButton")
+                .addEventListener("click", () => {
+                    if (!gapiInited || !window.google?.accounts?.oauth2) {
+                        showStatus(
+                            "Google API not ready yet, please wait...",
+                            "error",
+                        );
+                        return;
+                    }
+                    // Init lazily in case GIS script loaded after gisLoaded() was called
+                    if (!tokenClient) {
+                        gisLoaded();
+                    }
+                    tokenClient.requestAccessToken();
+                });
+
+            document
+                .getElementById("submitButton")
+                .addEventListener("click", submitWeight);
+            document
+                .getElementById("signoutButton")
+                .addEventListener("click", signOut);
+
+            // Allow enter key to submit
+            document
+                .getElementById("weight")
+                .addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") {
+                        submitWeight();
+                    }
+                });
+
+            // Load Google APIs
+            window.gapiLoaded = gapiLoaded;
+            window.gisLoaded = gisLoaded;
+        </script>
+        <script
+            async
+            defer
+            src="https://apis.google.com/js/api.js"
+            onload="gapiLoaded()"
+        ></script>
+        <script
+            async
+            defer
+            src="https://accounts.google.com/gsi/client"
+            onload="gisLoaded()"
+        ></script>
+    </body>
+</html>
