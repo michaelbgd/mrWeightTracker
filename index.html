@@ -162,7 +162,12 @@
     <script>
         // TODO: Replace with your actual Google Client ID
         const CLIENT_ID = '27682382506-llvoptiiot7beo02kp2uvvp8ptbkv80s.apps.googleusercontent.com';
-        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
+        const SCOPES = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive.file',
+            'openid',
+            'email',
+        ].join(' ');
         const SHEET_NAME = 'Weight Tracker';
         const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets';
 
@@ -204,7 +209,6 @@
                         return;
                     }
                     accessToken = response.access_token;
-                    console.log('Token received, length:', accessToken?.length);
                     handleAuthSuccess().catch(err => {
                         console.error('handleAuthSuccess failed:', err);
                         showStatus('Sign-in error: ' + err.message, 'error');
@@ -217,10 +221,6 @@
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('trackerSection').classList.add('active');
 
-            // Small delay to ensure the token is fully available in the closure
-            await new Promise(r => setTimeout(r, 100));
-
-            console.log('Fetching userinfo with token:', accessToken?.slice(0, 20) + '...');
             const userInfo = await api('https://www.googleapis.com/oauth2/v2/userinfo');
             document.getElementById('userInfo').textContent = `Signed in as ${userInfo.email}`;
 
