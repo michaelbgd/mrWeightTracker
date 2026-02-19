@@ -234,13 +234,16 @@
         let spreadsheetId = localStorage.getItem('weightTrackerSheetId');
         let tokenClient;
         let accessToken = null;
+        let refreshTimer = null;
+        let gisInitialized = false;
 
         // ── Token persistence ─────────────────────────────────────────────────
 
         function saveToken(token) {
             accessToken = token;
-            const expiry = Date.now() + 55 * 60 * 1000;
+            const expiry = Date.now() + 55 * 60 * 1000; // 55 min (tokens last 60 min)
             localStorage.setItem('weightTrackerToken', JSON.stringify({ token, expiry }));
+            scheduleProactiveRefresh(expiry);
         }
 
         function loadToken() {
@@ -248,6 +251,7 @@
                 const stored = JSON.parse(localStorage.getItem('weightTrackerToken'));
                 if (stored && stored.expiry > Date.now()) {
                     accessToken = stored.token;
+                    scheduleProactiveRefresh(stored.expiry);
                     return true;
                 }
             } catch (_) {}
@@ -257,30 +261,71 @@
         function clearToken() {
             accessToken = null;
             localStorage.removeItem('weightTrackerToken');
+            if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; }
+        }
+
+        // Refresh the token ~5 minutes before it expires so the user never
+        // hits an expired-token error mid-session.
+        function scheduleProactiveRefresh(expiry) {
+            if (refreshTimer) clearTimeout(refreshTimer);
+            const msUntilRefresh = expiry - Date.now() - 5 * 60 * 1000; // 5 min before expiry
+            if (msUntilRefresh > 0) {
+                refreshTimer = setTimeout(() => {
+                    refreshTokenSilently().catch(() => {
+                        // Silent refresh failed — the user's Google session has ended.
+                        // Just clear the token; they'll be prompted to sign in next time
+                        // they take an action.
+                        clearToken();
+                    });
+                }, msUntilRefresh);
+            }
         }
 
         function refreshTokenSilently() {
             return new Promise((resolve, reject) => {
-                const silentClient = google.accounts.oauth2.initTokenClient({
-                    client_id: CLIENT_ID,
-                    scope: SCOPES,
-                    prompt: '',
-                    callback: (response) => {
-                        if (response.error) {
-                            reject(new Error(response.error));
-                        } else {
-                            saveToken(response.access_token);
-                            resolve();
-                        }
-                    },
-                });
-                silentClient.requestAccessToken();
+                if (!tokenClient) { reject(new Error('tokenClient not ready')); return; }
+                // Temporarily swap callback, then restore
+                const originalCallback = tokenClient.callback;
+                tokenClient.callback = (response) => {
+                    tokenClient.callback = originalCallback;
+                    if (response.error) {
+                        reject(new Error(response.error));
+                    } else {
+                        saveToken(response.access_token);
+                        resolve();
+                    }
+                };
+                tokenClient.requestAccessToken({ prompt: '' });
             });
+        }
+
+        // If the token is expired (or missing) when an action is attempted,
+        // try a silent refresh first, then fall back to showing the login prompt.
+        async function ensureValidToken() {
+            if (accessToken) return; // token still in memory and not expired
+            // Try to re-load from localStorage (e.g. after a page refresh)
+            if (loadToken()) return;
+            // Token is gone/expired — attempt silent refresh
+            try {
+                await refreshTokenSilently();
+            } catch (_) {
+                // Silent refresh failed — need full re-auth
+                showLoginScreen();
+                throw new Error('Please sign in again to continue.');
+            }
+        }
+
+        function showLoginScreen() {
+            clearToken();
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('trackerSection').classList.remove('active');
         }
 
         // ── API helper ────────────────────────────────────────────────────────
 
         async function api(url, options = {}, isRetry = false) {
+            if (!isRetry) await ensureValidToken();
+
             const res = await fetch(url, {
                 ...options,
                 headers: {
@@ -291,7 +336,9 @@
             });
 
             if (res.status === 401 && !isRetry) {
-                await refreshTokenSilently();
+                // Token was rejected by Google — force a fresh token and retry once
+                accessToken = null;
+                await ensureValidToken();
                 return api(url, options, true);
             }
 
@@ -305,6 +352,9 @@
         // ── Auth ──────────────────────────────────────────────────────────────
 
         function gisLoaded() {
+            if (gisInitialized) return;
+            gisInitialized = true;
+
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
@@ -312,7 +362,7 @@
                 callback: (response) => {
                     if (response.error) {
                         clearToken();
-                        document.getElementById('authSection').style.display = 'block';
+                        showLoginScreen();
                         return;
                     }
                     saveToken(response.access_token);
@@ -324,7 +374,9 @@
 
             if (loadToken()) {
                 handleAuthSuccess().catch(() => {
-                    tokenClient.requestAccessToken();
+                    // Stored token is invalid — try silent refresh, then prompt
+                    clearToken();
+                    tokenClient.requestAccessToken({ prompt: '' });
                 });
             }
         }
@@ -463,8 +515,7 @@
 
         function signOut() {
             clearToken();
-            document.getElementById('authSection').style.display = 'block';
-            document.getElementById('trackerSection').classList.remove('active');
+            showLoginScreen();
             document.getElementById('weight').value = '';
             document.getElementById('entriesContainer').innerHTML = '<p class="entries-empty">No entries yet</p>';
             showStatus('', '');
