@@ -4,547 +4,618 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weight Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --ink: #1a1a18;
+            --paper: #f5f0e8;
+            --accent: #c8411a;
+            --muted: #8a8578;
+            --line: #d8d0c4;
+            --success: #2d6a4f;
+            --card: #fffdf8;
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: 'DM Mono', monospace;
+            background: var(--paper);
+            color: var(--ink);
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background-image:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 27px,
+                    rgba(0,0,0,0.04) 27px,
+                    rgba(0,0,0,0.04) 28px
+                );
         }
 
         .container {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
+            background: var(--card);
+            border: 1.5px solid var(--ink);
+            max-width: 420px;
             width: 100%;
+            box-shadow: 5px 5px 0 var(--ink);
+            position: relative;
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 28px;
+        .header {
+            border-bottom: 1.5px solid var(--ink);
+            padding: 20px 24px;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
         }
 
-        .auth-section {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .tracker-section {
-            display: none;
-        }
-
-        .tracker-section.active {
-            display: block;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-        }
-
-        input[type="number"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input[type="number"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
+        .header h1 {
+            font-family: 'Fraunces', serif;
             font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
+            font-size: 22px;
+            letter-spacing: -0.02em;
         }
 
-        button:hover {
-            background: #5568d3;
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .status {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 14px;
-            display: none;
-        }
-
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-            display: block;
-        }
-
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            display: block;
-        }
-
-        .user-info {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .signout-btn {
-            background: #dc3545;
-            margin-top: 10px;
-        }
-
-        .signout-btn:hover {
-            background: #c82333;
-        }
-
-        .recent-entries {
-            margin-top: 28px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-
-        .recent-entries h3 {
-            font-size: 12px;
-            font-weight: 600;
-            color: #999;
-            margin-bottom: 12px;
+        .header .subtitle {
+            font-size: 10px;
+            color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.07em;
+            letter-spacing: 0.12em;
         }
 
-        .entries-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
+        /* Setup screen */
+        .setup-section {
+            padding: 28px 24px;
         }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid var(--line);
+            background: var(--paper);
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            color: var(--ink);
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .field input:focus { border-color: var(--ink); }
+        .field input::placeholder { color: var(--muted); opacity: 0.6; }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--ink);
+            color: var(--paper);
+            border: 1.5px solid var(--ink);
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, transform 0.1s;
+        }
+
+        .btn:hover { background: var(--accent); border-color: var(--accent); }
+        .btn:active { transform: translate(2px, 2px); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--muted);
+            border-color: var(--line);
+            font-size: 11px;
+            padding: 8px 12px;
+        }
+
+        .btn-ghost:hover {
+            background: transparent;
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Tracker screen */
+        .tracker-section { display: none; }
+        .tracker-section.active { display: block; }
+
+        .user-bar {
+            border-bottom: 1.5px solid var(--line);
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .user-bar span { font-size: 11px; color: var(--muted); }
+
+        .user-bar .repo-link {
+            font-size: 10px;
+            color: var(--muted);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--muted);
+            opacity: 0.7;
+            transition: opacity 0.15s;
+        }
+
+        .user-bar .repo-link:hover { opacity: 1; color: var(--accent); border-color: var(--accent); }
+
+        .input-area {
+            padding: 24px 24px 20px;
+            border-bottom: 1.5px solid var(--line);
+        }
+
+        .weight-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .weight-row .field { flex: 1; margin-bottom: 0; }
+        .weight-row .btn { width: auto; padding: 10px 18px; white-space: nowrap; flex-shrink: 0; }
+
+        /* Status */
+        .status {
+            font-size: 11px;
+            padding: 8px 0 0;
+            min-height: 20px;
+            color: var(--muted);
+        }
+
+        .status.success { color: var(--success); }
+        .status.error { color: var(--accent); }
+
+        /* Entries */
+        .entries-area { padding: 20px 24px 24px; }
+
+        .entries-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            margin-bottom: 14px;
+        }
+
+        .entries-table { width: 100%; border-collapse: collapse; }
 
         .entries-table th {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
             text-align: left;
-            color: #aaa;
-            font-weight: 500;
-            padding: 0 8px 8px;
-            border-bottom: 1px solid #eee;
+            padding: 0 0 8px;
+            border-bottom: 1px solid var(--line);
+            font-weight: 400;
         }
 
-        .entries-table th:last-child {
-            text-align: right;
-        }
+        .entries-table th:last-child { text-align: right; }
 
         .entries-table td {
-            padding: 8px;
-            color: #444;
-            border-bottom: 1px solid #f5f5f5;
+            font-size: 12px;
+            color: var(--ink);
+            padding: 9px 0;
+            border-bottom: 1px solid var(--line);
         }
 
-        .entries-table tr:last-child td {
-            border-bottom: none;
-        }
+        .entries-table tr:last-child td { border-bottom: none; }
 
         .entries-table td:last-child {
             text-align: right;
-            font-weight: 600;
-            color: #667eea;
+            font-weight: 500;
+            font-family: 'Fraunces', serif;
+            font-size: 15px;
         }
 
         .entries-empty {
+            font-size: 12px;
+            color: var(--muted);
             text-align: center;
-            color: #bbb;
-            font-size: 13px;
-            padding: 12px 0;
+            padding: 20px 0;
+            font-style: italic;
+        }
+
+        .footer-actions { padding: 0 24px 20px; }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border: 1.5px solid var(--muted);
+            border-top-color: var(--ink);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Setup steps */
+        .steps {
+            border: 1px solid var(--line);
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            background: var(--paper);
+        }
+
+        .steps-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .steps ol { list-style: none; counter-reset: step; }
+
+        .steps ol li {
+            counter-increment: step;
+            font-size: 11px;
+            color: var(--ink);
+            line-height: 1.6;
+            padding-left: 20px;
+            position: relative;
+            margin-bottom: 4px;
+        }
+
+        .steps ol li::before {
+            content: counter(step) ".";
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .steps ol li a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid currentColor;
+        }
+
+        code {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            padding: 1px 4px;
+            font-size: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📊 Weight Tracker</h1>
-
-        <div class="auth-section" id="authSection">
-            <p style="margin-bottom: 20px; color: #666;">Sign in with Google to track your weight</p>
-            <button id="authButton">Sign in with Google</button>
+        <div class="header">
+            <h1>Weight Tracker</h1>
+            <span class="subtitle">via GitHub</span>
         </div>
 
-        <div class="tracker-section" id="trackerSection">
-            <div class="user-info" id="userInfo"></div>
-
-            <div class="input-group">
-                <label for="weight">Weight (kg)</label>
-                <input type="number" id="weight" step="0.1" placeholder="e.g., 75.5" required>
+        <!-- Setup screen -->
+        <div class="setup-section" id="setupSection">
+            <div class="steps">
+                <div class="steps-title">One-time setup</div>
+                <ol>
+                    <li>Create a <strong>private</strong> GitHub repo (e.g. <code>my-weight-data</code>)</li>
+                    <li>Go to <a href="https://github.com/settings/tokens/new" target="_blank">Settings → Developer Settings → Tokens (classic)</a></li>
+                    <li>Generate a token with only the <strong>repo</strong> scope — no expiry needed</li>
+                    <li>Paste everything below and click Connect</li>
+                </ol>
             </div>
 
-            <button id="submitButton">Submit Weight</button>
-            <button class="signout-btn" id="signoutButton">Sign Out</button>
+            <div class="field">
+                <label>Personal Access Token</label>
+                <input type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+            </div>
+            <div class="field">
+                <label>GitHub Username</label>
+                <input type="text" id="ownerInput" placeholder="your-username">
+            </div>
+            <div class="field">
+                <label>Repository Name</label>
+                <input type="text" id="repoInput" placeholder="my-weight-data">
+            </div>
 
-            <div class="status" id="status"></div>
+            <button class="btn" id="connectBtn">Connect Repository</button>
+            <div class="status" id="setupStatus"></div>
+        </div>
 
-            <div class="recent-entries">
-                <h3>Recent Entries</h3>
-                <div id="entriesContainer"><p class="entries-empty">No entries yet</p></div>
+        <!-- Tracker screen -->
+        <div class="tracker-section" id="trackerSection">
+            <div class="user-bar">
+                <span id="userBar">—</span>
+                <a href="#" class="repo-link" id="repoLink" target="_blank">↗ open repo</a>
+            </div>
+
+            <div class="input-area">
+                <div class="weight-row">
+                    <div class="field">
+                        <label>Weight (kg)</label>
+                        <input type="number" id="weightInput" step="0.1" placeholder="75.0">
+                    </div>
+                    <button class="btn" id="submitBtn">Log</button>
+                </div>
+                <div class="status" id="submitStatus"></div>
+            </div>
+
+            <div class="entries-area">
+                <div class="entries-label">Recent entries</div>
+                <div id="entriesContainer"><p class="entries-empty">Loading…</p></div>
+            </div>
+
+            <div class="footer-actions">
+                <button class="btn btn-ghost" id="disconnectBtn">Disconnect</button>
             </div>
         </div>
     </div>
 
     <script>
-        const CLIENT_ID = '27682382506-llvoptiiot7beo02kp2uvvp8ptbkv80s.apps.googleusercontent.com';
-        const SCOPES = [
-            'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive.file',
-            'openid',
-            'email',
-        ].join(' ');
-        const SHEET_NAME = 'Weight Tracker';
-        const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets';
+        const DATA_FILE = 'weight.csv';
+        const API = 'https://api.github.com';
 
-        let spreadsheetId = localStorage.getItem('weightTrackerSheetId');
-        let tokenClient;
-        let accessToken = null;
-        let refreshTimer = null;
-        let gisInitialized = false;
+        let config = null;
 
-        // ── Token persistence ─────────────────────────────────────────────────
-
-        function saveToken(token) {
-            accessToken = token;
-            const expiry = Date.now() + 55 * 60 * 1000; // 55 min (tokens last 60 min)
-            localStorage.setItem('weightTrackerToken', JSON.stringify({ token, expiry }));
-            scheduleProactiveRefresh(expiry);
+        // ── Persistence ──────────────────────────────────────────────────────
+        function saveConfig(cfg) {
+            config = cfg;
+            localStorage.setItem('wtConfig', JSON.stringify(cfg));
         }
 
-        function loadToken() {
+        function loadConfig() {
             try {
-                const stored = JSON.parse(localStorage.getItem('weightTrackerToken'));
-                if (stored && stored.expiry > Date.now()) {
-                    accessToken = stored.token;
-                    scheduleProactiveRefresh(stored.expiry);
-                    return true;
-                }
+                const raw = localStorage.getItem('wtConfig');
+                if (raw) { config = JSON.parse(raw); return true; }
             } catch (_) {}
             return false;
         }
 
-        function clearToken() {
-            accessToken = null;
-            localStorage.removeItem('weightTrackerToken');
-            if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; }
+        function clearConfig() {
+            config = null;
+            localStorage.removeItem('wtConfig');
         }
 
-        // Refresh the token ~5 minutes before it expires so the user never
-        // hits an expired-token error mid-session.
-        function scheduleProactiveRefresh(expiry) {
-            if (refreshTimer) clearTimeout(refreshTimer);
-            const msUntilRefresh = expiry - Date.now() - 5 * 60 * 1000; // 5 min before expiry
-            if (msUntilRefresh > 0) {
-                refreshTimer = setTimeout(() => {
-                    refreshTokenSilently().catch(() => {
-                        // Silent refresh failed — the user's Google session has ended.
-                        // Just clear the token; they'll be prompted to sign in next time
-                        // they take an action.
-                        clearToken();
-                    });
-                }, msUntilRefresh);
-            }
-        }
-
-        function refreshTokenSilently() {
-            return new Promise((resolve, reject) => {
-                if (!tokenClient) { reject(new Error('tokenClient not ready')); return; }
-                // Temporarily swap callback, then restore
-                const originalCallback = tokenClient.callback;
-                tokenClient.callback = (response) => {
-                    tokenClient.callback = originalCallback;
-                    if (response.error) {
-                        reject(new Error(response.error));
-                    } else {
-                        saveToken(response.access_token);
-                        resolve();
-                    }
-                };
-                tokenClient.requestAccessToken({ prompt: '' });
-            });
-        }
-
-        // If the token is expired (or missing) when an action is attempted,
-        // try a silent refresh first, then fall back to showing the login prompt.
-        async function ensureValidToken() {
-            if (accessToken) return; // token still in memory and not expired
-            // Try to re-load from localStorage (e.g. after a page refresh)
-            if (loadToken()) return;
-            // Token is gone/expired — attempt silent refresh
-            try {
-                await refreshTokenSilently();
-            } catch (_) {
-                // Silent refresh failed — need full re-auth
-                showLoginScreen();
-                throw new Error('Please sign in again to continue.');
-            }
-        }
-
-        function showLoginScreen() {
-            clearToken();
-            document.getElementById('authSection').style.display = 'block';
-            document.getElementById('trackerSection').classList.remove('active');
-        }
-
-        // ── API helper ────────────────────────────────────────────────────────
-
-        async function api(url, options = {}, isRetry = false) {
-            if (!isRetry) await ensureValidToken();
-
-            const res = await fetch(url, {
+        // ── GitHub API ───────────────────────────────────────────────────────
+        async function ghFetch(path, options = {}) {
+            const res = await fetch(`${API}${path}`, {
                 ...options,
                 headers: {
-                    Authorization: `Bearer ${accessToken}`,
+                    Authorization: `Bearer ${config.pat}`,
+                    Accept: 'application/vnd.github+json',
+                    'X-GitHub-Api-Version': '2022-11-28',
                     'Content-Type': 'application/json',
                     ...(options.headers || {}),
                 },
             });
-
-            if (res.status === 401 && !isRetry) {
-                // Token was rejected by Google — force a fresh token and retry once
-                accessToken = null;
-                await ensureValidToken();
-                return api(url, options, true);
-            }
-
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                throw new Error(err?.error?.message || `HTTP ${res.status}`);
+                throw new Error(err.message || `HTTP ${res.status}`);
             }
-            return res.json();
+            return res.status === 204 ? null : res.json();
         }
 
-        // ── Auth ──────────────────────────────────────────────────────────────
+        async function getFile() {
+            try {
+                const data = await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${DATA_FILE}`);
+                const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+                return { content, sha: data.sha };
+            } catch (e) {
+                if (e.message.includes('404') || e.message.includes('Not Found')) return null;
+                throw e;
+            }
+        }
 
-        function gisLoaded() {
-            if (gisInitialized) return;
-            gisInitialized = true;
-
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                prompt: '',
-                callback: (response) => {
-                    if (response.error) {
-                        clearToken();
-                        showLoginScreen();
-                        return;
-                    }
-                    saveToken(response.access_token);
-                    handleAuthSuccess().catch(err => {
-                        showStatus('Sign-in error: ' + err.message, 'error');
-                    });
-                },
+        async function putFile(content, sha, message) {
+            await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${DATA_FILE}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    message,
+                    content: btoa(unescape(encodeURIComponent(content))),
+                    ...(sha ? { sha } : {}),
+                }),
             });
-
-            if (loadToken()) {
-                handleAuthSuccess().catch(() => {
-                    // Stored token is invalid — try silent refresh, then prompt
-                    clearToken();
-                    tokenClient.requestAccessToken({ prompt: '' });
-                });
-            }
         }
 
-        async function handleAuthSuccess() {
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('trackerSection').classList.add('active');
-
-            const userInfo = await api('https://www.googleapis.com/oauth2/v2/userinfo');
-            document.getElementById('userInfo').textContent = `Signed in as ${userInfo.email}`;
-
-            if (!spreadsheetId) {
-                await createSpreadsheet();
-            }
-
-            await fetchRecentEntries();
+        // ── CSV helpers ──────────────────────────────────────────────────────
+        function parseCSV(text) {
+            const lines = text.trim().split('\n').filter(Boolean);
+            if (lines.length <= 1) return [];
+            return lines.slice(1).map(l => {
+                const [ts, kg] = l.split(',');
+                return { ts: ts?.trim(), kg: kg?.trim() };
+            });
         }
 
-        // ── Sheets API ────────────────────────────────────────────────────────
-
-        async function createSpreadsheet() {
-            try {
-                const sheet = await api('https://sheets.googleapis.com/v4/spreadsheets', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        properties: { title: 'Weight Tracker Data' },
-                        sheets: [{ properties: { title: SHEET_NAME } }],
-                    }),
-                });
-
-                spreadsheetId = sheet.spreadsheetId;
-                localStorage.setItem('weightTrackerSheetId', spreadsheetId);
-
-                await api(
-                    `${SHEETS_BASE}/${spreadsheetId}/values/${SHEET_NAME}!A1:B1?valueInputOption=RAW`,
-                    {
-                        method: 'PUT',
-                        body: JSON.stringify({ values: [['Timestamp', 'Weight (kg)']] }),
-                    }
-                );
-
-                showStatus('Spreadsheet created in your Google Drive!', 'success');
-            } catch (err) {
-                showStatus('Failed to create spreadsheet: ' + err.message, 'error');
-            }
+        function appendRow(existing, ts, kg) {
+            const header = 'timestamp,weight_kg\n';
+            const base = existing ? existing.replace(/\r/g, '') : header;
+            const ensured = base.startsWith('timestamp') ? base : header + base;
+            return ensured.trimEnd() + `\n${ts},${kg}\n`;
         }
 
-        async function fetchRecentEntries() {
-            if (!spreadsheetId) return;
-            try {
-                const data = await api(
-                    `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(SHEET_NAME + '!A:B')}`
-                );
-                const rows = (data.values || []).slice(1); // skip header
-                renderEntries(rows.slice(-5).reverse());
-            } catch (err) {
-                console.error('Failed to fetch entries:', err);
-            }
+        // ── Timestamp ────────────────────────────────────────────────────────
+        function nowISO() {
+            const d = new Date();
+            const off = -d.getTimezoneOffset();
+            const sign = off >= 0 ? '+' : '-';
+            const pad = n => String(Math.floor(Math.abs(n))).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T` +
+                   `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` +
+                   `${sign}${pad(off/60)}:${pad(off%60)}`;
+        }
+
+        // ── UI helpers ───────────────────────────────────────────────────────
+        function setStatus(id, msg, type = '') {
+            const el = document.getElementById(id);
+            el.textContent = msg;
+            el.className = `status ${type}`;
+            if (type === 'success') setTimeout(() => { el.textContent = ''; el.className = 'status'; }, 3000);
         }
 
         function renderEntries(rows) {
-            const container = document.getElementById('entriesContainer');
+            const c = document.getElementById('entriesContainer');
             if (!rows.length) {
-                container.innerHTML = '<p class="entries-empty">No entries yet</p>';
+                c.innerHTML = '<p class="entries-empty">No entries yet — log your first weight!</p>';
                 return;
             }
-            container.innerHTML = `
+            const recent = rows.slice(-10).reverse();
+            c.innerHTML = `
                 <table class="entries-table">
-                    <thead>
-                        <tr><th>Timestamp</th><th>kg</th></tr>
-                    </thead>
+                    <thead><tr><th>Date / Time</th><th>kg</th></tr></thead>
                     <tbody>
-                        ${rows.map(([ts, kg]) => `
-                            <tr>
-                                <td>${ts ?? '—'}</td>
-                                <td>${kg ?? '—'}</td>
-                            </tr>
-                        `).join('')}
+                        ${recent.map(({ ts, kg }) => {
+                            let display = ts;
+                            try {
+                                const d = new Date(ts);
+                                display = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                                        + ' · '
+                                        + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                            } catch (_) {}
+                            return `<tr><td>${display}</td><td>${kg}</td></tr>`;
+                        }).join('')}
                     </tbody>
-                </table>
-            `;
+                </table>`;
         }
 
-        async function submitWeight() {
-            const weightInput = document.getElementById('weight');
-            const weight = parseFloat(weightInput.value);
+        function showTracker() {
+            document.getElementById('setupSection').style.display = 'none';
+            document.getElementById('trackerSection').classList.add('active');
+            document.getElementById('userBar').textContent = `${config.owner} / ${config.repo}`;
+            document.getElementById('repoLink').href =
+                `https://github.com/${config.owner}/${config.repo}/blob/main/${DATA_FILE}`;
+        }
 
-            if (!weight || weight <= 0) {
-                showStatus('Please enter a valid weight', 'error');
+        function showSetup() {
+            document.getElementById('setupSection').style.display = 'block';
+            document.getElementById('trackerSection').classList.remove('active');
+        }
+
+        // ── Connect ──────────────────────────────────────────────────────────
+        async function connect() {
+            const pat   = document.getElementById('patInput').value.trim();
+            const owner = document.getElementById('ownerInput').value.trim();
+            const repo  = document.getElementById('repoInput').value.trim();
+
+            if (!pat || !owner || !repo) {
+                setStatus('setupStatus', 'Please fill in all three fields.', 'error');
                 return;
             }
 
-            if (!spreadsheetId) {
-                showStatus('No spreadsheet found — try signing out and back in', 'error');
-                return;
-            }
-
-            const submitButton = document.getElementById('submitButton');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Submitting…';
+            const btn = document.getElementById('connectBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Verifying…';
+            setStatus('setupStatus', '');
 
             try {
-                // ISO 8601 with local timezone offset e.g. 2026-02-12T19:04:00+01:00
-                const now = new Date();
-                const offset = -now.getTimezoneOffset();
-                const sign = offset >= 0 ? '+' : '-';
-                const pad = n => String(Math.floor(Math.abs(n))).padStart(2, '0');
-                const timestamp = now.getFullYear()
-                    + '-' + pad(now.getMonth() + 1)
-                    + '-' + pad(now.getDate())
-                    + 'T' + pad(now.getHours())
-                    + ':' + pad(now.getMinutes())
-                    + ':' + pad(now.getSeconds())
-                    + sign + pad(offset / 60) + ':' + pad(offset % 60);
-
-                await api(
-                    `${SHEETS_BASE}/${spreadsheetId}/values/${encodeURIComponent(SHEET_NAME + '!A:B')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
-                    {
-                        method: 'POST',
-                        body: JSON.stringify({ values: [[timestamp, weight]] }),
-                    }
-                );
-
-                showStatus('Weight recorded!', 'success');
-                weightInput.value = '';
-                await fetchRecentEntries();
-            } catch (err) {
-                showStatus('Failed to save: ' + err.message, 'error');
+                config = { pat, owner, repo };
+                await ghFetch(`/repos/${owner}/${repo}`);
+                saveConfig({ pat, owner, repo });
+                showTracker();
+                await loadEntries();
+            } catch (e) {
+                config = null;
+                const msg = e.message.includes('404') || e.message.includes('Not Found')
+                    ? 'Repository not found — check the username and repo name.'
+                    : e.message.includes('401') || e.message.includes('Bad credentials')
+                    ? 'Invalid token — make sure you copied the full PAT.'
+                    : 'Error: ' + e.message;
+                setStatus('setupStatus', msg, 'error');
             } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Submit Weight';
+                btn.disabled = false;
+                btn.textContent = 'Connect Repository';
             }
         }
 
-        // ── UI ────────────────────────────────────────────────────────────────
-
-        function signOut() {
-            clearToken();
-            showLoginScreen();
-            document.getElementById('weight').value = '';
-            document.getElementById('entriesContainer').innerHTML = '<p class="entries-empty">No entries yet</p>';
-            showStatus('', '');
+        // ── Load entries ─────────────────────────────────────────────────────
+        async function loadEntries() {
+            try {
+                const file = await getFile();
+                renderEntries(file ? parseCSV(file.content) : []);
+            } catch (e) {
+                document.getElementById('entriesContainer').innerHTML =
+                    `<p class="entries-empty" style="color:var(--accent)">Failed to load: ${e.message}</p>`;
+            }
         }
 
-        function showStatus(message, type) {
-            const el = document.getElementById('status');
-            el.textContent = message;
-            el.className = `status ${type}`;
-            if (type === 'success') setTimeout(() => { el.className = 'status'; }, 3000);
-        }
-
-        // ── Event listeners ───────────────────────────────────────────────────
-
-        document.getElementById('authButton').addEventListener('click', () => {
-            if (!window.google?.accounts?.oauth2) {
-                showStatus('Google API not ready yet, please wait…', 'error');
+        // ── Submit weight ────────────────────────────────────────────────────
+        async function submitWeight() {
+            const input = document.getElementById('weightInput');
+            const kg = parseFloat(input.value);
+            if (!kg || kg <= 0) {
+                setStatus('submitStatus', 'Enter a valid weight.', 'error');
                 return;
             }
-            if (!tokenClient) gisLoaded();
-            tokenClient.requestAccessToken();
-        });
 
-        document.getElementById('submitButton').addEventListener('click', submitWeight);
-        document.getElementById('signoutButton').addEventListener('click', signOut);
-        document.getElementById('weight').addEventListener('keypress', (e) => {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>';
+            setStatus('submitStatus', '');
+
+            try {
+                const ts = nowISO();
+                const file = await getFile();
+                const updated = appendRow(file?.content ?? null, ts, kg);
+                await putFile(updated, file?.sha ?? null, `log: ${kg}kg on ${ts.slice(0,10)}`);
+                input.value = '';
+                setStatus('submitStatus', `✓ ${kg} kg logged`, 'success');
+                await loadEntries();
+            } catch (e) {
+                setStatus('submitStatus', 'Failed: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Log';
+            }
+        }
+
+        // ── Disconnect ───────────────────────────────────────────────────────
+        function disconnect() {
+            if (!confirm('Remove stored credentials from this browser?')) return;
+            clearConfig();
+            document.getElementById('patInput').value = '';
+            document.getElementById('ownerInput').value = '';
+            document.getElementById('repoInput').value = '';
+            showSetup();
+        }
+
+        // ── Boot ─────────────────────────────────────────────────────────────
+        document.getElementById('connectBtn').addEventListener('click', connect);
+        document.getElementById('submitBtn').addEventListener('click', submitWeight);
+        document.getElementById('disconnectBtn').addEventListener('click', disconnect);
+        document.getElementById('weightInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') submitWeight();
         });
+        document.getElementById('patInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') document.getElementById('ownerInput').focus();
+        });
+        document.getElementById('ownerInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') document.getElementById('repoInput').focus();
+        });
+        document.getElementById('repoInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') connect();
+        });
+
+        if (loadConfig()) {
+            showTracker();
+            loadEntries();
+        }
     </script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </body>
 </html>
