@@ -194,6 +194,50 @@
             padding: 12px 0;
         }
 
+        /* Tabs */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 0;
+            min-height: 44px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #eee;
+            border-radius: 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+            width: auto;
+        }
+
+        .tab-btn:hover { color: #667eea; border-bottom-color: #667eea; background: transparent; }
+        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+        .tab-btn:disabled { background: transparent; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Chart */
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 220px;
+        }
+
+        .chart-empty {
+            text-align: center;
+            color: #bbb;
+            font-size: 13px;
+            padding: 60px 0;
+        }
+
         .footer-actions {
             margin-top: 16px;
             text-align: center;
@@ -317,8 +361,19 @@
             <div class="status" id="submitStatus"></div>
 
             <div class="recent-entries">
-                <h3>Recent Entries</h3>
-                <div id="entriesContainer"><p class="entries-empty">Loading…</p></div>
+                <div class="tab-bar">
+                    <button class="tab-btn active" id="tabTable" onclick="switchTab('table')">Table</button>
+                    <button class="tab-btn" id="tabChart" onclick="switchTab('chart')">Chart</button>
+                </div>
+                <div class="tab-panel active" id="panelTable">
+                    <div id="entriesContainer"><p class="entries-empty">Loading…</p></div>
+                </div>
+                <div class="tab-panel" id="panelChart">
+                    <div class="chart-wrap">
+                        <canvas id="weightChart"></canvas>
+                    </div>
+                    <p class="chart-empty" id="chartEmpty" style="display:none">Log at least 2 entries to see a chart.</p>
+                </div>
             </div>
 
             <div class="footer-actions">
@@ -327,6 +382,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script>
         const DATA_FILE = 'weight.csv';
         const API = 'https://api.github.com';
@@ -421,6 +477,104 @@
                    `${sign}${pad(off/60)}:${pad(off%60)}`;
         }
 
+        // ── Chart ────────────────────────────────────────────────────────────
+        let weightChart = null;
+        let allRows = [];
+        let activeTab = 'table';
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.getElementById('tabTable').classList.toggle('active', tab === 'table');
+            document.getElementById('tabChart').classList.toggle('active', tab === 'chart');
+            document.getElementById('panelTable').classList.toggle('active', tab === 'table');
+            document.getElementById('panelChart').classList.toggle('active', tab === 'chart');
+            if (tab === 'chart') renderChart(allRows);
+        }
+
+        function renderChart(rows) {
+            const wrap = document.querySelector('.chart-wrap');
+            const empty = document.getElementById('chartEmpty');
+            if (rows.length < 2) {
+                wrap.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+            wrap.style.display = 'block';
+            empty.style.display = 'none';
+
+            const sorted = [...rows].sort((a, b) => new Date(a.ts) - new Date(b.ts));
+            const labels = sorted.map(r => {
+                try {
+                    return new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                } catch (_) { return r.ts; }
+            });
+            const data = sorted.map(r => parseFloat(r.kg));
+            const tooltipDates = sorted.map(r => {
+                try {
+                    const d = new Date(r.ts);
+                    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                         + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                } catch (_) { return r.ts; }
+            });
+
+            if (weightChart) { weightChart.destroy(); weightChart = null; }
+
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            weightChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102,126,234,0.08)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#667eea',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'nearest', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => tooltipDates[items[0].dataIndex],
+                                label: (item) => ` ${item.parsed.y} kg`,
+                            },
+                            backgroundColor: '#333',
+                            titleFont: { size: 12 },
+                            bodyFont: { size: 13, weight: '600' },
+                            padding: 10,
+                            cornerRadius: 6,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 6,
+                                font: { size: 11 },
+                                color: '#aaa',
+                                maxRotation: 0,
+                            },
+                            grid: { display: false },
+                            border: { color: '#eee' },
+                        },
+                        y: {
+                            ticks: { font: { size: 11 }, color: '#aaa' },
+                            grid: { color: '#f5f5f5' },
+                            border: { dash: [4, 4], color: 'transparent' },
+                        }
+                    }
+                }
+            });
+        }
+
         // ── UI helpers ───────────────────────────────────────────────────────
         function setStatus(id, msg, type = '') {
             const el = document.getElementById(id);
@@ -430,28 +584,30 @@
         }
 
         function renderEntries(rows) {
+            allRows = rows;
             const c = document.getElementById('entriesContainer');
             if (!rows.length) {
                 c.innerHTML = '<p class="entries-empty">No entries yet — log your first weight!</p>';
-                return;
+            } else {
+                const recent = rows.slice(-10).reverse();
+                c.innerHTML = `
+                    <table class="entries-table">
+                        <thead><tr><th>Date / Time</th><th>kg</th></tr></thead>
+                        <tbody>
+                            ${recent.map(({ ts, kg }) => {
+                                let display = ts;
+                                try {
+                                    const d = new Date(ts);
+                                    display = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                                            + ' · '
+                                            + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                                } catch (_) {}
+                                return `<tr><td>${display}</td><td>${kg}</td></tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>`;
             }
-            const recent = rows.slice(-10).reverse();
-            c.innerHTML = `
-                <table class="entries-table">
-                    <thead><tr><th>Date / Time</th><th>kg</th></tr></thead>
-                    <tbody>
-                        ${recent.map(({ ts, kg }) => {
-                            let display = ts;
-                            try {
-                                const d = new Date(ts);
-                                display = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                                        + ' · '
-                                        + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-                            } catch (_) {}
-                            return `<tr><td>${display}</td><td>${kg}</td></tr>`;
-                        }).join('')}
-                    </tbody>
-                </table>`;
+            if (activeTab === 'chart') renderChart(allRows);
         }
 
         function showTracker() {
@@ -510,7 +666,7 @@
                 renderEntries(file ? parseCSV(file.content) : []);
             } catch (e) {
                 document.getElementById('entriesContainer').innerHTML =
-                    `<p class="entries-empty" style="color:var(--accent)">Failed to load: ${e.message}</p>`;
+                    `<p class="entries-empty" style="color:#dc3545">Failed to load: ${e.message}</p>`;
             }
         }
 
