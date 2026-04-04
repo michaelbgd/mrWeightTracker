@@ -674,11 +674,15 @@
         }
 
         // ── Submit weight ────────────────────────────────────────────────────
+        let busy = false;
         async function submitWeight() {
+            if (busy) return;
+            busy = true;
             const input = document.getElementById('weightInput');
             const kg = parseFloat(input.value);
             if (!kg || kg <= 0) {
                 setStatus('submitStatus', 'Enter a valid weight.', 'error');
+                busy = false;
                 return;
             }
 
@@ -698,6 +702,7 @@
             } catch (e) {
                 setStatus('submitStatus', 'Failed: ' + e.message, 'error');
             } finally {
+                busy = false;
                 btn.disabled = false;
                 btn.textContent = 'Log';
             }
