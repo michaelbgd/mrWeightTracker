@@ -390,6 +390,9 @@
         let config = null;
 
         // ── Persistence ──────────────────────────────────────────────────────
+        // Note: The GitHub PAT is stored in plain text in localStorage. Without a backend
+        // there's no meaningfully better option. Use a fine-grained token scoped to a
+        // single repo to limit the blast radius.
         function saveConfig(cfg) {
             config = cfg;
             localStorage.setItem('wtConfig', JSON.stringify(cfg));
