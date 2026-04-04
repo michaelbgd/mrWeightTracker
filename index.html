@@ -171,7 +171,7 @@
             border-bottom: 1px solid #eee;
         }
 
-        .entries-table th:last-child { text-align: right; }
+        .entries-table th:nth-child(2) { text-align: right; }
 
         .entries-table td {
             padding: 8px;
@@ -181,11 +181,32 @@
 
         .entries-table tr:last-child td { border-bottom: none; }
 
-        .entries-table td:last-child {
+        .entries-table td.weight-col {
             text-align: right;
             font-weight: 600;
             color: #667eea;
         }
+
+        .entries-table td.del-col {
+            width: 28px;
+            padding: 4px 2px 4px 4px;
+            text-align: center;
+        }
+
+        .del-btn {
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 4px;
+            line-height: 1;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .del-btn:hover { color: #999; background: #f5f5f5; }
+        .del-btn.confirm { color: #dc3545; font-size: 11px; font-weight: 600; background: #fff5f5; }
 
         .entries-empty {
             text-align: center;
@@ -605,8 +626,10 @@
                 thDate.textContent = 'Date / Time';
                 const thKg = document.createElement('th');
                 thKg.textContent = 'kg';
+                const thDel = document.createElement('th');
                 headRow.appendChild(thDate);
                 headRow.appendChild(thKg);
+                headRow.appendChild(thDel);
                 thead.appendChild(headRow);
                 table.appendChild(thead);
                 const tbody = document.createElement('tbody');
@@ -622,9 +645,19 @@
                     const tdDate = document.createElement('td');
                     tdDate.textContent = display;
                     const tdKg = document.createElement('td');
+                    tdKg.className = 'weight-col';
                     tdKg.textContent = kg;
+                    const tdDel = document.createElement('td');
+                    tdDel.className = 'del-col';
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'del-btn';
+                    delBtn.innerHTML = '&times;';
+                    delBtn.title = 'Delete entry';
+                    delBtn.addEventListener('click', () => handleDelete(delBtn, ts, kg));
+                    tdDel.appendChild(delBtn);
                     tr.appendChild(tdDate);
                     tr.appendChild(tdKg);
+                    tr.appendChild(tdDel);
                     tbody.appendChild(tr);
                 });
                 table.appendChild(tbody);
@@ -725,6 +758,47 @@
                 busy = false;
                 btn.disabled = false;
                 btn.textContent = 'Log';
+            }
+        }
+
+        // ── Delete entry ─────────────────────────────────────────────────────
+        function handleDelete(btn, ts, kg) {
+            if (btn.classList.contains('confirm')) {
+                btn.disabled = true;
+                btn.textContent = '...';
+                deleteEntry(ts, kg);
+                return;
+            }
+            btn.classList.add('confirm');
+            btn.textContent = 'Sure?';
+            setTimeout(() => {
+                if (btn && btn.isConnected && btn.classList.contains('confirm')) {
+                    btn.classList.remove('confirm');
+                    btn.innerHTML = '&times;';
+                }
+            }, 3000);
+        }
+
+        async function deleteEntry(ts, kg) {
+            setStatus('submitStatus', '');
+            try {
+                const file = await getFile();
+                if (!file) throw new Error('No data file found');
+                const lines = file.content.replace(/\r/g, '').split('\n');
+                let found = false;
+                const kept = lines.filter(line => {
+                    if (found) return true;
+                    const [lineTs, lineKg] = line.split(',').map(s => s?.trim());
+                    if (lineTs === ts && lineKg === kg) { found = true; return false; }
+                    return true;
+                });
+                if (!found) throw new Error('Entry not found — it may have already been deleted');
+                const updated = kept.join('\n');
+                await putFile(updated, file.sha, `delete: ${kg}kg from ${ts.slice(0,10)}`);
+                setStatus('submitStatus', 'Entry deleted', 'success');
+                await loadEntries();
+            } catch (e) {
+                setStatus('submitStatus', 'Delete failed: ' + e.message, 'error');
             }
         }
 
