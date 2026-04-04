@@ -74,6 +74,12 @@
         .input-grid .field { margin-bottom: 0; }
         .input-grid .field.full { grid-column: 1 / -1; }
 
+        @media (max-width: 440px) {
+            .container { padding: 24px 18px; }
+            .input-grid { grid-template-columns: 1fr; }
+            .input-grid .field.full { grid-column: 1; }
+        }
+
         /* Buttons */
         .btn {
             width: 100%;
@@ -396,11 +402,11 @@
             </div>
 
             <div class="car-bar">
-                <button class="car-btn active" id="carI20" onclick="switchCar('i20')">i20</button>
-                <button class="car-btn" id="carI30" onclick="switchCar('i30')">i30</button>
+                <button class="car-btn" id="carI20" onclick="switchCar('i20')">i20</button>
+                <button class="car-btn active" id="carI30" onclick="switchCar('i30')">i30</button>
             </div>
 
-            <div class="input-grid">
+            <div class="input-grid" id="inputArea">
                 <div class="field">
                     <label for="datumInput">Date</label>
                     <input type="date" id="datumInput">
@@ -419,7 +425,8 @@
                 </div>
                 <div class="field full">
                     <label for="stationInput">Tankstelle</label>
-                    <input type="text" id="stationInput" placeholder="e.g. Jet / Salzburg">
+                    <input type="text" id="stationInput" placeholder="e.g. Jet / Salzburg" list="stationList">
+                    <datalist id="stationList"></datalist>
                 </div>
             </div>
 
@@ -453,12 +460,12 @@
     <script>
         const API = 'https://api.github.com';
         const CARS = {
-            i20: { file: 'fuel_i20.csv', cacheKey: 'fuelCache_i20' },
-            i30: { file: 'fuel_i30.csv', cacheKey: 'fuelCache_i30' },
+            i20: { file: 'fuel_i20.csv', cacheKey: 'fuelCache_i20', readOnly: true },
+            i30: { file: 'fuel_i30.csv', cacheKey: 'fuelCache_i30', readOnly: false },
         };
 
         let config = null;
-        let activeCar = 'i20';
+        let activeCar = 'i30';
         let allRows = [];
         let activeTab = 'table';
         let fuelChart = null;
@@ -585,6 +592,9 @@
             activeCar = car;
             document.getElementById('carI20').classList.toggle('active', car === 'i20');
             document.getElementById('carI30').classList.toggle('active', car === 'i30');
+            const ro = CARS[car].readOnly;
+            document.getElementById('inputArea').style.display = ro ? 'none' : '';
+            document.getElementById('submitBtn').style.display = ro ? 'none' : '';
             loadEntries();
         }
 
@@ -701,7 +711,10 @@
 
                 const thead = document.createElement('thead');
                 const headRow = document.createElement('tr');
-                ['Date', 'KM', 'L', 'EUR', 'EUR/L', 'l/100km', ''].forEach((text, i) => {
+                const cols = CARS[activeCar].readOnly
+                    ? ['Date', 'KM', 'L', 'EUR', 'EUR/L', 'l/100km']
+                    : ['Date', 'KM', 'L', 'EUR', 'EUR/L', 'l/100km', ''];
+                cols.forEach((text, i) => {
                     const th = document.createElement('th');
                     th.textContent = text;
                     if (i >= 1 && i <= 5) th.className = 'num';
@@ -745,15 +758,17 @@
                     tdL100.textContent = row.l_100km != null ? row.l_100km.toFixed(1) : '\u2013';
                     tr.appendChild(tdL100);
 
-                    const tdDel = document.createElement('td');
-                    tdDel.className = 'del-col';
-                    const delBtn = document.createElement('button');
-                    delBtn.className = 'del-btn';
-                    delBtn.innerHTML = '&times;';
-                    delBtn.title = 'Delete entry';
-                    delBtn.addEventListener('click', () => handleDelete(delBtn, row.datum, row.km_stand));
-                    tdDel.appendChild(delBtn);
-                    tr.appendChild(tdDel);
+                    if (!CARS[activeCar].readOnly) {
+                        const tdDel = document.createElement('td');
+                        tdDel.className = 'del-col';
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'del-btn';
+                        delBtn.innerHTML = '&times;';
+                        delBtn.title = 'Delete entry';
+                        delBtn.addEventListener('click', () => handleDelete(delBtn, row.datum, row.km_stand));
+                        tdDel.appendChild(delBtn);
+                        tr.appendChild(tdDel);
+                    }
 
                     tbody.appendChild(tr);
                 });
@@ -761,6 +776,21 @@
                 c.appendChild(table);
 
             }
+            // Populate station autocomplete from all entries across both cars
+            const dl = document.getElementById('stationList');
+            dl.textContent = '';
+            const stations = new Set();
+            Object.keys(CARS).forEach(car => {
+                const csv = localStorage.getItem(CARS[car].cacheKey);
+                if (csv) parseCSV(csv).forEach(r => { if (r.tankstelle) stations.add(r.tankstelle); });
+            });
+            sorted.forEach(r => { if (r.tankstelle) stations.add(r.tankstelle); });
+            stations.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                dl.appendChild(opt);
+            });
+
             if (activeTab === 'chart') renderChart(allRows);
         }
 
