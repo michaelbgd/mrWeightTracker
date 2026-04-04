@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weight Tracker</title>
+    <title>Fuel Tracker</title>
     <style>
         * {
             margin: 0;
@@ -17,7 +17,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
             padding: 20px;
         }
 
@@ -26,7 +26,7 @@
             padding: 40px;
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
+            max-width: 540px;
             width: 100%;
         }
 
@@ -41,43 +41,54 @@
         .tracker-section.active { display: block; }
 
         /* Fields */
-        .field { margin-bottom: 20px; }
+        .field { margin-bottom: 14px; }
 
         .field label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #555;
             font-weight: 500;
+            font-size: 14px;
         }
 
         .field input {
             width: 100%;
-            padding: 12px;
+            padding: 10px 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             transition: border-color 0.3s;
             outline: none;
             font-family: inherit;
         }
 
-        .field input:focus { border-color: #667eea; }
+        .field input:focus { border-color: #11998e; }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .input-grid .field { margin-bottom: 0; }
+        .input-grid .field.full { grid-column: 1 / -1; }
 
         /* Buttons */
         .btn {
             width: 100%;
-            padding: 14px;
-            background: #667eea;
+            padding: 12px;
+            background: #11998e;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: background 0.3s;
         }
 
-        .btn:hover { background: #5568d3; }
+        .btn:hover { background: #0e7c73; }
         .btn:disabled { background: #ccc; cursor: not-allowed; }
 
         .btn-ghost {
@@ -92,14 +103,16 @@
             cursor: pointer;
             transition: color 0.2s, border-color 0.2s;
             display: inline-block;
+            text-decoration: none;
         }
 
-        .btn-ghost:hover { color: #dc3545; border-color: #dc3545; background: transparent; }
+        .btn-ghost:hover { color: #11998e; border-color: #11998e; background: transparent; }
+        .btn-ghost.danger:hover { color: #dc3545; border-color: #dc3545; }
 
         /* Status */
         .status {
-            margin-top: 15px;
-            padding: 12px;
+            margin-top: 12px;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
             font-size: 14px;
@@ -112,7 +125,7 @@
         /* User bar */
         .user-info {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             color: #666;
             font-size: 14px;
             display: flex;
@@ -124,67 +137,75 @@
 
         .user-info .repo-link {
             font-size: 12px;
-            color: #667eea;
+            color: #11998e;
             text-decoration: none;
         }
 
         .user-info .repo-link:hover { text-decoration: underline; }
 
-        /* Weight row */
-        .weight-row {
+        /* Car selector */
+        .car-bar {
             display: flex;
-            gap: 10px;
-            align-items: flex-end;
+            gap: 6px;
             margin-bottom: 20px;
         }
 
-        .weight-row .field { flex: 1; margin-bottom: 0; }
-        .weight-row .btn { width: auto; padding: 12px 20px; flex-shrink: 0; }
-
-        /* Recent entries */
-        .recent-entries {
-            margin-top: 28px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
+        .car-btn {
+            flex: 1;
+            padding: 10px 0;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .recent-entries h3 {
-            font-size: 12px;
-            font-weight: 600;
-            color: #999;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
+        .car-btn:hover { color: #11998e; border-color: #e0e0e0; }
+        .car-btn.active { color: #11998e; background: #e8f8f5; border-color: #11998e; }
+
+        /* Entries table */
+        .recent-entries {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 16px;
         }
 
         .entries-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .entries-table th {
             text-align: left;
             color: #aaa;
             font-weight: 500;
-            padding: 0 8px 8px;
+            padding: 0 6px 6px;
             border-bottom: 1px solid #eee;
+            white-space: nowrap;
         }
 
-        .entries-table th:nth-child(2) { text-align: right; }
+        .entries-table th.num { text-align: right; }
 
         .entries-table td {
-            padding: 8px;
+            padding: 6px;
             color: #444;
             border-bottom: 1px solid #f5f5f5;
         }
 
         .entries-table tr:last-child td { border-bottom: none; }
 
-        .entries-table td.weight-col {
+        .entries-table td.num {
             text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .entries-table td.highlight {
             font-weight: 600;
-            color: #667eea;
+            color: #11998e;
         }
 
         .entries-table td.del-col {
@@ -219,7 +240,7 @@
         .tab-bar {
             display: flex;
             gap: 4px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .tab-btn {
@@ -238,8 +259,8 @@
             width: auto;
         }
 
-        .tab-btn:hover { color: #667eea; border-bottom-color: #667eea; background: transparent; }
-        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+        .tab-btn:hover { color: #11998e; border-bottom-color: #11998e; background: transparent; }
+        .tab-btn.active { color: #11998e; border-bottom-color: #11998e; }
         .tab-btn:disabled { background: transparent; }
 
         .tab-panel { display: none; }
@@ -249,7 +270,7 @@
         .chart-wrap {
             position: relative;
             width: 100%;
-            height: 220px;
+            height: 240px;
         }
 
         .chart-empty {
@@ -262,6 +283,9 @@
         .footer-actions {
             margin-top: 16px;
             text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
         }
 
         /* Spinner */
@@ -281,8 +305,8 @@
 
         /* Setup steps */
         .steps {
-            background: #f8f9ff;
-            border: 1px solid #e0e4ff;
+            background: #f0faf8;
+            border: 1px solid #c8ede8;
             border-radius: 8px;
             padding: 16px 18px;
             margin-bottom: 24px;
@@ -317,11 +341,11 @@
             content: counter(step) ".";
             position: absolute;
             left: 0;
-            color: #667eea;
+            color: #11998e;
             font-weight: 600;
         }
 
-        .steps ol li a { color: #667eea; }
+        .steps ol li a { color: #11998e; }
 
         code {
             background: #eee;
@@ -333,7 +357,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 Weight Tracker</h1>
+        <h1>&#9981; Fuel Tracker</h1>
 
         <!-- Setup screen -->
         <div id="setupSection">
@@ -341,7 +365,7 @@
                 <div class="steps-title">One-time setup</div>
                 <ol>
                     <li>Create a <strong>private</strong> GitHub repo (e.g. <code>my-weight-data</code>)</li>
-                    <li>Go to <a href="https://github.com/settings/tokens/new?type=beta" target="_blank">Settings → Developer Settings → Fine-grained tokens</a></li>
+                    <li>Go to <a href="https://github.com/settings/tokens/new?type=beta" target="_blank">Settings &rarr; Developer Settings &rarr; Fine-grained tokens</a></li>
                     <li>Set <strong>Repository access</strong> to your repo only, and grant <strong>Contents: Read and write</strong></li>
                     <li>Paste everything below and click Connect</li>
                 </ol>
@@ -368,17 +392,38 @@
         <div class="tracker-section" id="trackerSection">
             <div class="user-info">
                 <span id="userBar"></span>
-                <a href="#" class="repo-link" id="repoLink" target="_blank">↗ open repo</a>
+                <a href="#" class="repo-link" id="repoLink" target="_blank">&nearr; open repo</a>
             </div>
 
-            <div class="weight-row">
+            <div class="car-bar">
+                <button class="car-btn active" id="carI20" onclick="switchCar('i20')">i20</button>
+                <button class="car-btn" id="carI30" onclick="switchCar('i30')">i30</button>
+            </div>
+
+            <div class="input-grid">
                 <div class="field">
-                    <label for="weightInput">Weight (kg)</label>
-                    <input type="number" id="weightInput" step="0.1" placeholder="e.g., 75.5">
+                    <label for="datumInput">Date</label>
+                    <input type="date" id="datumInput">
                 </div>
-                <button class="btn" id="submitBtn">Log</button>
+                <div class="field">
+                    <label for="kmInput">KM-Stand</label>
+                    <input type="number" id="kmInput" placeholder="e.g. 12345">
+                </div>
+                <div class="field">
+                    <label for="literInput">Liter</label>
+                    <input type="number" id="literInput" step="0.01" placeholder="e.g. 35.5">
+                </div>
+                <div class="field">
+                    <label for="preisInput">EUR</label>
+                    <input type="number" id="preisInput" step="0.01" placeholder="e.g. 52.30">
+                </div>
+                <div class="field full">
+                    <label for="stationInput">Tankstelle</label>
+                    <input type="text" id="stationInput" placeholder="e.g. Jet / Salzburg">
+                </div>
             </div>
 
+            <button class="btn" id="submitBtn">Log</button>
             <div class="status" id="submitStatus"></div>
 
             <div class="recent-entries">
@@ -387,29 +432,37 @@
                     <button class="tab-btn" id="tabChart" onclick="switchTab('chart')">Chart</button>
                 </div>
                 <div class="tab-panel active" id="panelTable">
-                    <div id="entriesContainer"><p class="entries-empty">Loading…</p></div>
+                    <div id="entriesContainer"><p class="entries-empty">Loading&hellip;</p></div>
                 </div>
                 <div class="tab-panel" id="panelChart">
                     <div class="chart-wrap">
-                        <canvas id="weightChart"></canvas>
+                        <canvas id="fuelChart"></canvas>
                     </div>
                     <p class="chart-empty" id="chartEmpty" style="display:none">Log at least 2 entries to see a chart.</p>
                 </div>
             </div>
 
             <div class="footer-actions">
-                <a href="fuel.html" class="btn-ghost">Fuel Tracker</a>
-                <button class="btn-ghost" id="disconnectBtn">Disconnect</button>
+                <a href="index.html" class="btn-ghost">Weight Tracker</a>
+                <button class="btn-ghost danger" id="disconnectBtn">Disconnect</button>
             </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script>
-        const DATA_FILE = 'weight.csv';
         const API = 'https://api.github.com';
+        const CARS = {
+            i20: { file: 'fuel_i20.csv', cacheKey: 'fuelCache_i20' },
+            i30: { file: 'fuel_i30.csv', cacheKey: 'fuelCache_i30' },
+        };
 
         let config = null;
+        let activeCar = 'i20';
+        let allRows = [];
+        let activeTab = 'table';
+        let fuelChart = null;
+        let busy = false;
 
         // ── Persistence ──────────────────────────────────────────────────────
         // Note: The GitHub PAT is stored in plain text in localStorage. Without a backend
@@ -434,13 +487,11 @@
         }
 
         // ── CSV cache ────────────────────────────────────────────────────────
-        // A daily weight entry is ~40 bytes, so even decades of data stays well
-        // under localStorage's ~5 MB limit. No size guards needed.
-        const CACHE_KEY = 'wtCache';
-
-        function cacheCSV(csv) { localStorage.setItem(CACHE_KEY, csv); }
-        function getCachedCSV() { return localStorage.getItem(CACHE_KEY); }
-        function clearCache() { localStorage.removeItem(CACHE_KEY); }
+        function cacheCSV(csv) { localStorage.setItem(CARS[activeCar].cacheKey, csv); }
+        function getCachedCSV() { return localStorage.getItem(CARS[activeCar].cacheKey); }
+        function clearAllCaches() {
+            Object.values(CARS).forEach(c => localStorage.removeItem(c.cacheKey));
+        }
 
         // ── GitHub API ───────────────────────────────────────────────────────
         async function ghFetch(path, options = {}) {
@@ -461,9 +512,11 @@
             return res.status === 204 ? null : res.json();
         }
 
+        function dataFile() { return CARS[activeCar].file; }
+
         async function getFile() {
             try {
-                const data = await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${DATA_FILE}`);
+                const data = await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${dataFile()}`);
                 const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
                 return { content, sha: data.sha };
             } catch (e) {
@@ -473,7 +526,7 @@
         }
 
         async function putFile(content, sha, message) {
-            await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${DATA_FILE}`, {
+            await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${dataFile()}`, {
                 method: 'PUT',
                 body: JSON.stringify({
                     message,
@@ -488,34 +541,54 @@
             const lines = text.trim().split('\n').filter(Boolean);
             if (lines.length <= 1) return [];
             return lines.slice(1).map(l => {
-                const [ts, kg] = l.split(',');
-                return { ts: ts?.trim(), kg: kg?.trim() };
+                const parts = l.split(',');
+                return {
+                    datum: parts[0]?.trim(),
+                    km_stand: parts[1]?.trim(),
+                    liter: parts[2]?.trim(),
+                    preis: parts[3]?.trim(),
+                    tankstelle: parts[4]?.trim(),
+                };
             });
         }
 
-        function appendRow(existing, ts, kg) {
-            const header = 'timestamp,weight_kg\n';
+        function appendRow(existing, datum, km, liter, preis, tankstelle) {
+            const header = 'datum,km_stand,liter,preis,tankstelle\n';
             const base = existing ? existing.replace(/\r/g, '') : header;
-            const ensured = base.startsWith('timestamp') ? base : header + base;
-            return ensured.trimEnd() + `\n${ts},${kg}\n`;
+            const ensured = base.startsWith('datum') ? base : header + base;
+            return ensured.trimEnd() + `\n${datum},${km},${liter},${preis},${tankstelle}\n`;
         }
 
-        // ── Timestamp ────────────────────────────────────────────────────────
-        function nowISO() {
-            const d = new Date();
-            const off = -d.getTimezoneOffset();
-            const sign = off >= 0 ? '+' : '-';
-            const pad = n => String(Math.floor(Math.abs(n))).padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T` +
-                   `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` +
-                   `${sign}${pad(off/60)}:${pad(off%60)}`;
+        // ── Derived fields ───────────────────────────────────────────────────
+        function computeDerived(rows) {
+            const sorted = [...rows].sort((a, b) => a.datum.localeCompare(b.datum));
+            for (let i = 0; i < sorted.length; i++) {
+                const km = parseFloat(sorted[i].km_stand);
+                const liter = parseFloat(sorted[i].liter);
+                const preis = parseFloat(sorted[i].preis);
+                sorted[i].preis_l = liter > 0 ? (preis / liter) : null;
+                if (i > 0) {
+                    const prevKm = parseFloat(sorted[i - 1].km_stand);
+                    const diff = km - prevKm;
+                    sorted[i].km_diff = diff > 0 ? diff : null;
+                    sorted[i].l_100km = diff > 0 && liter > 0 ? (liter / diff * 100) : null;
+                } else {
+                    sorted[i].km_diff = null;
+                    sorted[i].l_100km = null;
+                }
+            }
+            return sorted;
         }
 
-        // ── Chart ────────────────────────────────────────────────────────────
-        let weightChart = null;
-        let allRows = [];
-        let activeTab = 'table';
+        // ── Car selector ─────────────────────────────────────────────────────
+        function switchCar(car) {
+            activeCar = car;
+            document.getElementById('carI20').classList.toggle('active', car === 'i20');
+            document.getElementById('carI30').classList.toggle('active', car === 'i30');
+            loadEntries();
+        }
 
+        // ── Tabs ─────────────────────────────────────────────────────────────
         function switchTab(tab) {
             activeTab = tab;
             document.getElementById('tabTable').classList.toggle('active', tab === 'table');
@@ -525,10 +598,12 @@
             if (tab === 'chart') renderChart(allRows);
         }
 
+        // ── Chart ────────────────────────────────────────────────────────────
         function renderChart(rows) {
             const wrap = document.querySelector('.chart-wrap');
             const empty = document.getElementById('chartEmpty');
-            if (rows.length < 2) {
+            const withConsumption = rows.filter(r => r.l_100km != null);
+            if (withConsumption.length < 2) {
                 wrap.style.display = 'none';
                 empty.style.display = 'block';
                 return;
@@ -536,34 +611,26 @@
             wrap.style.display = 'block';
             empty.style.display = 'none';
 
-            const sorted = [...rows].sort((a, b) => new Date(a.ts) - new Date(b.ts));
-            const labels = sorted.map(r => {
+            const labels = withConsumption.map(r => {
                 try {
-                    return new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                } catch (_) { return r.ts; }
+                    return new Date(r.datum).toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+                } catch (_) { return r.datum; }
             });
-            const data = sorted.map(r => parseFloat(r.kg));
-            const tooltipDates = sorted.map(r => {
-                try {
-                    const d = new Date(r.ts);
-                    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                         + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-                } catch (_) { return r.ts; }
-            });
+            const data = withConsumption.map(r => Math.round(r.l_100km * 100) / 100);
 
-            if (weightChart) { weightChart.destroy(); weightChart = null; }
+            if (fuelChart) { fuelChart.destroy(); fuelChart = null; }
 
-            const ctx = document.getElementById('weightChart').getContext('2d');
-            weightChart = new Chart(ctx, {
+            const ctx = document.getElementById('fuelChart').getContext('2d');
+            fuelChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels,
                     datasets: [{
                         data,
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102,126,234,0.08)',
+                        borderColor: '#11998e',
+                        backgroundColor: 'rgba(17,153,142,0.08)',
                         borderWidth: 2,
-                        pointBackgroundColor: '#667eea',
+                        pointBackgroundColor: '#11998e',
                         pointRadius: 4,
                         pointHoverRadius: 6,
                         fill: true,
@@ -578,8 +645,11 @@
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                title: (items) => tooltipDates[items[0].dataIndex],
-                                label: (item) => ` ${item.parsed.y} kg`,
+                                title: (items) => {
+                                    const r = withConsumption[items[0].dataIndex];
+                                    return r.datum;
+                                },
+                                label: (item) => ` ${item.parsed.y.toFixed(2)} l/100km`,
                             },
                             backgroundColor: '#333',
                             titleFont: { size: 12 },
@@ -590,16 +660,12 @@
                     },
                     scales: {
                         x: {
-                            ticks: {
-                                maxTicksLimit: 6,
-                                font: { size: 11 },
-                                color: '#aaa',
-                                maxRotation: 0,
-                            },
+                            ticks: { maxTicksLimit: 8, font: { size: 11 }, color: '#aaa', maxRotation: 0 },
                             grid: { display: false },
                             border: { color: '#eee' },
                         },
                         y: {
+                            title: { display: true, text: 'l/100km', font: { size: 11 }, color: '#aaa' },
                             ticks: { font: { size: 11 }, color: '#aaa' },
                             grid: { color: '#f5f5f5' },
                             border: { dash: [4, 4], color: 'transparent' },
@@ -618,60 +684,82 @@
         }
 
         function renderEntries(rows) {
-            allRows = rows;
+            const sorted = computeDerived(rows);
+            allRows = sorted;
             const c = document.getElementById('entriesContainer');
             c.textContent = '';
-            if (!rows.length) {
+
+            if (!sorted.length) {
                 const p = document.createElement('p');
                 p.className = 'entries-empty';
-                p.textContent = 'No entries yet \u2014 log your first weight!';
+                p.textContent = 'No entries yet \u2014 log your first fill-up!';
                 c.appendChild(p);
             } else {
-                const recent = rows.slice(-10).reverse();
+                const recent = sorted.slice(-15).reverse();
                 const table = document.createElement('table');
                 table.className = 'entries-table';
+
                 const thead = document.createElement('thead');
                 const headRow = document.createElement('tr');
-                const thDate = document.createElement('th');
-                thDate.textContent = 'Date / Time';
-                const thKg = document.createElement('th');
-                thKg.textContent = 'kg';
-                const thDel = document.createElement('th');
-                headRow.appendChild(thDate);
-                headRow.appendChild(thKg);
-                headRow.appendChild(thDel);
+                ['Date', 'KM', 'L', 'EUR', 'EUR/L', 'l/100km', ''].forEach((text, i) => {
+                    const th = document.createElement('th');
+                    th.textContent = text;
+                    if (i >= 1 && i <= 5) th.className = 'num';
+                    headRow.appendChild(th);
+                });
                 thead.appendChild(headRow);
                 table.appendChild(thead);
+
                 const tbody = document.createElement('tbody');
-                recent.forEach(({ ts, kg }) => {
-                    let display = ts;
-                    try {
-                        const d = new Date(ts);
-                        display = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                                + ' \u00b7 '
-                                + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-                    } catch (_) {}
+                recent.forEach(row => {
                     const tr = document.createElement('tr');
                     const tdDate = document.createElement('td');
-                    tdDate.textContent = display;
-                    const tdKg = document.createElement('td');
-                    tdKg.className = 'weight-col';
-                    tdKg.textContent = kg;
+                    try {
+                        const d = new Date(row.datum);
+                        tdDate.textContent = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: '2-digit' });
+                    } catch (_) { tdDate.textContent = row.datum; }
+                    tr.appendChild(tdDate);
+
+                    const tdKm = document.createElement('td');
+                    tdKm.className = 'num';
+                    tdKm.textContent = row.km_stand;
+                    tr.appendChild(tdKm);
+
+                    const tdLiter = document.createElement('td');
+                    tdLiter.className = 'num';
+                    tdLiter.textContent = row.liter;
+                    tr.appendChild(tdLiter);
+
+                    const tdPreis = document.createElement('td');
+                    tdPreis.className = 'num';
+                    tdPreis.textContent = row.preis;
+                    tr.appendChild(tdPreis);
+
+                    const tdPreisL = document.createElement('td');
+                    tdPreisL.className = 'num';
+                    tdPreisL.textContent = row.preis_l != null ? row.preis_l.toFixed(3) : '\u2013';
+                    tr.appendChild(tdPreisL);
+
+                    const tdL100 = document.createElement('td');
+                    tdL100.className = 'num highlight';
+                    tdL100.textContent = row.l_100km != null ? row.l_100km.toFixed(1) : '\u2013';
+                    tr.appendChild(tdL100);
+
                     const tdDel = document.createElement('td');
                     tdDel.className = 'del-col';
                     const delBtn = document.createElement('button');
                     delBtn.className = 'del-btn';
                     delBtn.innerHTML = '&times;';
                     delBtn.title = 'Delete entry';
-                    delBtn.addEventListener('click', () => handleDelete(delBtn, ts, kg));
+                    delBtn.addEventListener('click', () => handleDelete(delBtn, row.datum, row.km_stand));
                     tdDel.appendChild(delBtn);
-                    tr.appendChild(tdDate);
-                    tr.appendChild(tdKg);
                     tr.appendChild(tdDel);
+
                     tbody.appendChild(tr);
                 });
                 table.appendChild(tbody);
                 c.appendChild(table);
+
             }
             if (activeTab === 'chart') renderChart(allRows);
         }
@@ -681,7 +769,9 @@
             document.getElementById('trackerSection').classList.add('active');
             document.getElementById('userBar').textContent = `${config.owner} / ${config.repo}`;
             document.getElementById('repoLink').href =
-                `https://github.com/${config.owner}/${config.repo}/blob/main/${DATA_FILE}`;
+                `https://github.com/${config.owner}/${config.repo}`;
+            // Default date to today
+            document.getElementById('datumInput').value = new Date().toISOString().slice(0, 10);
         }
 
         function showSetup() {
@@ -702,7 +792,7 @@
 
             const btn = document.getElementById('connectBtn');
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span>Verifying…';
+            btn.innerHTML = '<span class="spinner"></span>Verifying\u2026';
             setStatus('setupStatus', '');
 
             try {
@@ -714,9 +804,9 @@
             } catch (e) {
                 config = null;
                 const msg = e.message.includes('404') || e.message.includes('Not Found')
-                    ? 'Repository not found — check the username and repo name.'
+                    ? 'Repository not found \u2014 check the username and repo name.'
                     : e.message.includes('401') || e.message.includes('Bad credentials')
-                    ? 'Invalid token — make sure you copied the full PAT.'
+                    ? 'Invalid token \u2014 make sure you copied the full PAT.'
                     : 'Error: ' + e.message;
                 setStatus('setupStatus', msg, 'error');
             } finally {
@@ -735,25 +825,34 @@
                 const freshCSV = file ? file.content : '';
                 if (freshCSV !== (cached || '')) {
                     renderEntries(freshCSV ? parseCSV(freshCSV) : []);
-                    if (freshCSV) cacheCSV(freshCSV); else clearCache();
+                    if (freshCSV) cacheCSV(freshCSV); else localStorage.removeItem(CARS[activeCar].cacheKey);
                 }
             } catch (e) {
                 if (!cached) {
-                    document.getElementById('entriesContainer').innerHTML =
-                        `<p class="entries-empty" style="color:#dc3545">Failed to load: ${e.message}</p>`;
+                    const c = document.getElementById('entriesContainer');
+                    c.textContent = '';
+                    const p = document.createElement('p');
+                    p.className = 'entries-empty';
+                    p.style.color = '#dc3545';
+                    p.textContent = 'Failed to load: ' + e.message;
+                    c.appendChild(p);
                 }
             }
         }
 
-        // ── Submit weight ────────────────────────────────────────────────────
-        let busy = false;
-        async function submitWeight() {
+        // ── Submit ───────────────────────────────────────────────────────────
+        async function submitFuel() {
             if (busy) return;
             busy = true;
-            const input = document.getElementById('weightInput');
-            const kg = parseFloat(input.value);
-            if (!kg || kg <= 0) {
-                setStatus('submitStatus', 'Enter a valid weight.', 'error');
+
+            const datum = document.getElementById('datumInput').value.trim();
+            const km = document.getElementById('kmInput').value.trim();
+            const liter = document.getElementById('literInput').value.trim();
+            const preis = document.getElementById('preisInput').value.trim();
+            const station = document.getElementById('stationInput').value.trim();
+
+            if (!datum || !km || !liter || !preis) {
+                setStatus('submitStatus', 'Please fill in date, km, liters, and price.', 'error');
                 busy = false;
                 return;
             }
@@ -764,29 +863,14 @@
             setStatus('submitStatus', '');
 
             try {
-                const ts = nowISO();
                 const file = await getFile();
-                const prevRows = file ? parseCSV(file.content) : [];
-                const updated = appendRow(file?.content ?? null, ts, kg);
-                await putFile(updated, file?.sha ?? null, `log: ${kg}kg on ${ts.slice(0,10)}`);
+                const updated = appendRow(file?.content ?? null, datum, km, liter, preis, station);
+                await putFile(updated, file?.sha ?? null, `fuel ${activeCar}: ${liter}L on ${datum}`);
                 cacheCSV(updated);
-                input.value = '';
-
-                let statusMsg = `✓ ${kg} kg logged`;
-                if (prevRows.length > 0) {
-                    const prevKg = parseFloat(prevRows[prevRows.length - 1].kg);
-                    if (!isNaN(prevKg)) {
-                        const diff = kg - prevKg;
-                        if (diff === 0) {
-                            statusMsg += ' (no change)';
-                        } else {
-                            const sign = diff > 0 ? '+' : '\u2212';
-                            const color = diff < 0 ? '#155724' : '#721c24';
-                            statusMsg = `✓ ${kg} kg logged (<span style="color:${color}">${sign}${Math.abs(diff).toFixed(1)} kg</span>)`;
-                        }
-                    }
-                }
-                setStatus('submitStatus', statusMsg, 'success');
+                document.getElementById('kmInput').value = '';
+                document.getElementById('literInput').value = '';
+                document.getElementById('preisInput').value = '';
+                setStatus('submitStatus', `\u2713 ${liter} L logged`, 'success');
                 await loadEntries();
             } catch (e) {
                 setStatus('submitStatus', 'Failed: ' + e.message, 'error');
@@ -798,11 +882,11 @@
         }
 
         // ── Delete entry ─────────────────────────────────────────────────────
-        function handleDelete(btn, ts, kg) {
+        function handleDelete(btn, datum, km) {
             if (btn.classList.contains('confirm')) {
                 btn.disabled = true;
                 btn.textContent = '...';
-                deleteEntry(ts, kg);
+                deleteEntry(datum, km);
                 return;
             }
             btn.classList.add('confirm');
@@ -815,7 +899,7 @@
             }, 3000);
         }
 
-        async function deleteEntry(ts, kg) {
+        async function deleteEntry(datum, km) {
             setStatus('submitStatus', '');
             try {
                 const file = await getFile();
@@ -824,13 +908,14 @@
                 let found = false;
                 const kept = lines.filter(line => {
                     if (found) return true;
-                    const [lineTs, lineKg] = line.split(',').map(s => s?.trim());
-                    if (lineTs === ts && lineKg === kg) { found = true; return false; }
+                    const parts = line.split(',');
+                    if (parts[0]?.trim() === datum && parts[1]?.trim() === km) { found = true; return false; }
                     return true;
                 });
-                if (!found) throw new Error('Entry not found — it may have already been deleted');
+                if (!found) throw new Error('Entry not found');
                 const updated = kept.join('\n');
-                await putFile(updated, file.sha, `delete: ${kg}kg from ${ts.slice(0,10)}`);
+                await putFile(updated, file.sha, `delete fuel ${activeCar}: ${datum}`);
+                cacheCSV(updated);
                 setStatus('submitStatus', 'Entry deleted', 'success');
                 await loadEntries();
             } catch (e) {
@@ -842,7 +927,7 @@
         function disconnect() {
             if (!confirm('Remove stored credentials from this browser?')) return;
             clearConfig();
-            clearCache();
+            clearAllCaches();
             document.getElementById('patInput').value = '';
             document.getElementById('ownerInput').value = '';
             document.getElementById('repoInput').value = '';
@@ -851,19 +936,16 @@
 
         // ── Boot ─────────────────────────────────────────────────────────────
         document.getElementById('connectBtn').addEventListener('click', connect);
-        document.getElementById('submitBtn').addEventListener('click', submitWeight);
+        document.getElementById('submitBtn').addEventListener('click', submitFuel);
         document.getElementById('disconnectBtn').addEventListener('click', disconnect);
-        document.getElementById('weightInput').addEventListener('keypress', e => {
-            if (e.key === 'Enter') submitWeight();
+        document.getElementById('literInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') document.getElementById('preisInput').focus();
         });
-        document.getElementById('patInput').addEventListener('keypress', e => {
-            if (e.key === 'Enter') document.getElementById('ownerInput').focus();
+        document.getElementById('preisInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') document.getElementById('stationInput').focus();
         });
-        document.getElementById('ownerInput').addEventListener('keypress', e => {
-            if (e.key === 'Enter') document.getElementById('repoInput').focus();
-        });
-        document.getElementById('repoInput').addEventListener('keypress', e => {
-            if (e.key === 'Enter') connect();
+        document.getElementById('stationInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') submitFuel();
         });
 
         if (loadConfig()) {
