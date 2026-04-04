@@ -602,7 +602,7 @@
         // ── UI helpers ───────────────────────────────────────────────────────
         function setStatus(id, msg, type = '') {
             const el = document.getElementById(id);
-            el.textContent = msg;
+            el.innerHTML = msg;
             el.className = `status ${type}`;
             if (type === 'success') setTimeout(() => { el.textContent = ''; el.className = 'status'; }, 3000);
         }
@@ -747,10 +747,26 @@
             try {
                 const ts = nowISO();
                 const file = await getFile();
+                const prevRows = file ? parseCSV(file.content) : [];
                 const updated = appendRow(file?.content ?? null, ts, kg);
                 await putFile(updated, file?.sha ?? null, `log: ${kg}kg on ${ts.slice(0,10)}`);
                 input.value = '';
-                setStatus('submitStatus', `✓ ${kg} kg logged`, 'success');
+
+                let statusMsg = `✓ ${kg} kg logged`;
+                if (prevRows.length > 0) {
+                    const prevKg = parseFloat(prevRows[prevRows.length - 1].kg);
+                    if (!isNaN(prevKg)) {
+                        const diff = kg - prevKg;
+                        if (diff === 0) {
+                            statusMsg += ' (no change)';
+                        } else {
+                            const sign = diff > 0 ? '+' : '\u2212';
+                            const color = diff < 0 ? '#155724' : '#721c24';
+                            statusMsg = `✓ ${kg} kg logged (<span style="color:${color}">${sign}${Math.abs(diff).toFixed(1)} kg</span>)`;
+                        }
+                    }
+                }
+                setStatus('submitStatus', statusMsg, 'success');
                 await loadEntries();
             } catch (e) {
                 setStatus('submitStatus', 'Failed: ' + e.message, 'error');
