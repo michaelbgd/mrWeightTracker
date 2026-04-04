@@ -4,133 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weight Tracker</title>
+    <link rel="stylesheet" href="shared.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --accent: #667eea;
+            --accent-hover: #5568d3;
+            --gradient-1: #667eea;
+            --gradient-2: #764ba2;
+            --steps-bg: #f8f9ff;
+            --steps-border: #e0e4ff;
+            --container-max-width: 400px;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
-            width: 100%;
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 28px;
-        }
-
-        .tracker-section { display: none; }
-        .tracker-section.active { display: block; }
-
-        /* Fields */
-        .field { margin-bottom: 20px; }
-
-        .field label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-        }
-
-        .field input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-            outline: none;
-            font-family: inherit;
-        }
-
-        .field input:focus { border-color: #667eea; }
-
-        /* Buttons */
-        .btn {
-            width: 100%;
-            padding: 14px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .btn:hover { background: #5568d3; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-
-        .btn-ghost {
-            width: auto;
-            padding: 7px 14px;
-            background: transparent;
-            color: #999;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 400;
-            cursor: pointer;
-            transition: color 0.2s, border-color 0.2s;
-            display: inline-block;
-        }
-
-        .btn-ghost:hover { color: #dc3545; border-color: #dc3545; background: transparent; }
-
-        /* Status */
-        .status {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 14px;
-            display: none;
-        }
-
-        .status.success { background: #d4edda; color: #155724; display: block; }
-        .status.error   { background: #f8d7da; color: #721c24; display: block; }
-
-        /* User bar */
-        .user-info {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #666;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .user-info .repo-link {
-            font-size: 12px;
-            color: #667eea;
-            text-decoration: none;
-        }
-
-        .user-info .repo-link:hover { text-decoration: underline; }
-
-        /* Weight row */
         .weight-row {
             display: flex;
             gap: 10px;
@@ -141,199 +26,24 @@
         .weight-row .field { flex: 1; margin-bottom: 0; }
         .weight-row .btn { width: auto; padding: 12px 20px; flex-shrink: 0; }
 
-        /* Recent entries */
         .recent-entries {
             margin-top: 28px;
             border-top: 1px solid #eee;
             padding-top: 20px;
         }
 
-        .recent-entries h3 {
-            font-size: 12px;
-            font-weight: 600;
-            color: #999;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-        }
-
-        .entries-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        .entries-table th {
-            text-align: left;
-            color: #aaa;
-            font-weight: 500;
-            padding: 0 8px 8px;
-            border-bottom: 1px solid #eee;
-        }
-
         .entries-table th:nth-child(2) { text-align: right; }
-
-        .entries-table td {
-            padding: 8px;
-            color: #444;
-            border-bottom: 1px solid #f5f5f5;
-        }
-
-        .entries-table tr:last-child td { border-bottom: none; }
 
         .entries-table td.weight-col {
             text-align: right;
             font-weight: 600;
             color: #667eea;
         }
-
-        .entries-table td.del-col {
-            width: 28px;
-            padding: 4px 2px 4px 4px;
-            text-align: center;
-        }
-
-        .del-btn {
-            background: none;
-            border: none;
-            color: #ccc;
-            font-size: 14px;
-            cursor: pointer;
-            padding: 2px 5px;
-            border-radius: 4px;
-            line-height: 1;
-            transition: color 0.2s, background 0.2s;
-        }
-
-        .del-btn:hover { color: #999; background: #f5f5f5; }
-        .del-btn.confirm { color: #dc3545; font-size: 11px; font-weight: 600; background: #fff5f5; }
-
-        .entries-empty {
-            text-align: center;
-            color: #bbb;
-            font-size: 13px;
-            padding: 12px 0;
-        }
-
-        /* Tabs */
-        .tab-bar {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 16px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 8px 0;
-            min-height: 44px;
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid #eee;
-            border-radius: 0;
-            font-size: 13px;
-            font-weight: 500;
-            color: #aaa;
-            cursor: pointer;
-            transition: color 0.2s, border-color 0.2s;
-            width: auto;
-        }
-
-        .tab-btn:hover { color: #667eea; border-bottom-color: #667eea; background: transparent; }
-        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
-        .tab-btn:disabled { background: transparent; }
-
-        .tab-panel { display: none; }
-        .tab-panel.active { display: block; }
-
-        /* Chart */
-        .chart-wrap {
-            position: relative;
-            width: 100%;
-            height: 220px;
-        }
-
-        .chart-empty {
-            text-align: center;
-            color: #bbb;
-            font-size: 13px;
-            padding: 60px 0;
-        }
-
-        .footer-actions {
-            margin-top: 16px;
-            text-align: center;
-        }
-
-        /* Spinner */
-        .spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(255,255,255,0.4);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            vertical-align: middle;
-            margin-right: 6px;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Setup steps */
-        .steps {
-            background: #f8f9ff;
-            border: 1px solid #e0e4ff;
-            border-radius: 8px;
-            padding: 16px 18px;
-            margin-bottom: 24px;
-        }
-
-        .steps-title {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #888;
-            margin-bottom: 10px;
-        }
-
-        .steps ol {
-            list-style: none;
-            counter-reset: step;
-            padding: 0;
-        }
-
-        .steps ol li {
-            counter-increment: step;
-            font-size: 13px;
-            color: #555;
-            line-height: 1.6;
-            padding-left: 22px;
-            position: relative;
-            margin-bottom: 4px;
-        }
-
-        .steps ol li::before {
-            content: counter(step) ".";
-            position: absolute;
-            left: 0;
-            color: #667eea;
-            font-weight: 600;
-        }
-
-        .steps ol li a { color: #667eea; }
-
-        code {
-            background: #eee;
-            border-radius: 3px;
-            padding: 1px 5px;
-            font-size: 12px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📊 Weight Tracker</h1>
+        <h1>&#128202; Weight Tracker</h1>
 
         <!-- Setup screen -->
         <div id="setupSection">
@@ -341,7 +51,7 @@
                 <div class="steps-title">One-time setup</div>
                 <ol>
                     <li>Create a <strong>private</strong> GitHub repo (e.g. <code>my-weight-data</code>)</li>
-                    <li>Go to <a href="https://github.com/settings/tokens/new?type=beta" target="_blank">Settings → Developer Settings → Fine-grained tokens</a></li>
+                    <li>Go to <a href="https://github.com/settings/tokens/new?type=beta" target="_blank">Settings &rarr; Developer Settings &rarr; Fine-grained tokens</a></li>
                     <li>Set <strong>Repository access</strong> to your repo only, and grant <strong>Contents: Read and write</strong></li>
                     <li>Paste everything below and click Connect</li>
                 </ol>
@@ -368,7 +78,7 @@
         <div class="tracker-section" id="trackerSection">
             <div class="user-info">
                 <span id="userBar"></span>
-                <a href="#" class="repo-link" id="repoLink" target="_blank">↗ open repo</a>
+                <a href="#" class="repo-link" id="repoLink" target="_blank">&nearr; open repo</a>
             </div>
 
             <div class="weight-row">
@@ -387,7 +97,7 @@
                     <button class="tab-btn" id="tabChart" onclick="switchTab('chart')">Chart</button>
                 </div>
                 <div class="tab-panel active" id="panelTable">
-                    <div id="entriesContainer"><p class="entries-empty">Loading…</p></div>
+                    <div id="entriesContainer"><p class="entries-empty">Loading&hellip;</p></div>
                 </div>
                 <div class="tab-panel" id="panelChart">
                     <div class="chart-wrap">
@@ -399,89 +109,21 @@
 
             <div class="footer-actions">
                 <a href="fuel.html" class="btn-ghost">Fuel Tracker</a>
-                <button class="btn-ghost" id="disconnectBtn">Disconnect</button>
+                <button class="btn-ghost danger" id="disconnectBtn">Disconnect</button>
             </div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="shared.js"></script>
     <script>
         const DATA_FILE = 'weight.csv';
-        const API = 'https://api.github.com';
-
-        let config = null;
-
-        // ── Persistence ──────────────────────────────────────────────────────
-        // Note: The GitHub PAT is stored in plain text in localStorage. Without a backend
-        // there's no meaningfully better option. Use a fine-grained token scoped to a
-        // single repo to limit the blast radius.
-        function saveConfig(cfg) {
-            config = cfg;
-            localStorage.setItem('wtConfig', JSON.stringify(cfg));
-        }
-
-        function loadConfig() {
-            try {
-                const raw = localStorage.getItem('wtConfig');
-                if (raw) { config = JSON.parse(raw); return true; }
-            } catch (_) {}
-            return false;
-        }
-
-        function clearConfig() {
-            config = null;
-            localStorage.removeItem('wtConfig');
-        }
-
-        // ── CSV cache ────────────────────────────────────────────────────────
-        // A daily weight entry is ~40 bytes, so even decades of data stays well
-        // under localStorage's ~5 MB limit. No size guards needed.
         const CACHE_KEY = 'wtCache';
 
+        function dataFile() { return DATA_FILE; }
         function cacheCSV(csv) { localStorage.setItem(CACHE_KEY, csv); }
         function getCachedCSV() { return localStorage.getItem(CACHE_KEY); }
         function clearCache() { localStorage.removeItem(CACHE_KEY); }
-
-        // ── GitHub API ───────────────────────────────────────────────────────
-        async function ghFetch(path, options = {}) {
-            const res = await fetch(`${API}${path}`, {
-                ...options,
-                headers: {
-                    Authorization: `Bearer ${config.pat}`,
-                    Accept: 'application/vnd.github+json',
-                    'X-GitHub-Api-Version': '2022-11-28',
-                    'Content-Type': 'application/json',
-                    ...(options.headers || {}),
-                },
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || `HTTP ${res.status}`);
-            }
-            return res.status === 204 ? null : res.json();
-        }
-
-        async function getFile() {
-            try {
-                const data = await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${DATA_FILE}`);
-                const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
-                return { content, sha: data.sha };
-            } catch (e) {
-                if (e.message.includes('404') || e.message.includes('Not Found')) return null;
-                throw e;
-            }
-        }
-
-        async function putFile(content, sha, message) {
-            await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${DATA_FILE}`, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    message,
-                    content: btoa(unescape(encodeURIComponent(content))),
-                    ...(sha ? { sha } : {}),
-                }),
-            });
-        }
 
         // ── CSV helpers ──────────────────────────────────────────────────────
         function parseCSV(text) {
@@ -547,7 +189,7 @@
                 try {
                     const d = new Date(r.ts);
                     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                         + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                         + ' \u00b7 ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
                 } catch (_) { return r.ts; }
             });
 
@@ -590,12 +232,7 @@
                     },
                     scales: {
                         x: {
-                            ticks: {
-                                maxTicksLimit: 6,
-                                font: { size: 11 },
-                                color: '#aaa',
-                                maxRotation: 0,
-                            },
+                            ticks: { maxTicksLimit: 6, font: { size: 11 }, color: '#aaa', maxRotation: 0 },
                             grid: { display: false },
                             border: { color: '#eee' },
                         },
@@ -609,14 +246,7 @@
             });
         }
 
-        // ── UI helpers ───────────────────────────────────────────────────────
-        function setStatus(id, msg, type = '') {
-            const el = document.getElementById(id);
-            el.innerHTML = msg;
-            el.className = `status ${type}`;
-            if (type === 'success') setTimeout(() => { el.textContent = ''; el.className = 'status'; }, 3000);
-        }
-
+        // ── Render entries ────────────────────────────────────────────────────
         function renderEntries(rows) {
             allRows = rows;
             const c = document.getElementById('entriesContainer');
@@ -684,67 +314,6 @@
                 `https://github.com/${config.owner}/${config.repo}/blob/main/${DATA_FILE}`;
         }
 
-        function showSetup() {
-            document.getElementById('setupSection').style.display = 'block';
-            document.getElementById('trackerSection').classList.remove('active');
-        }
-
-        // ── Connect ──────────────────────────────────────────────────────────
-        async function connect() {
-            const pat   = document.getElementById('patInput').value.trim();
-            const owner = document.getElementById('ownerInput').value.trim();
-            const repo  = document.getElementById('repoInput').value.trim();
-
-            if (!pat || !owner || !repo) {
-                setStatus('setupStatus', 'Please fill in all three fields.', 'error');
-                return;
-            }
-
-            const btn = document.getElementById('connectBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span>Verifying…';
-            setStatus('setupStatus', '');
-
-            try {
-                config = { pat, owner, repo };
-                await ghFetch(`/repos/${owner}/${repo}`);
-                saveConfig({ pat, owner, repo });
-                showTracker();
-                await loadEntries();
-            } catch (e) {
-                config = null;
-                const msg = e.message.includes('404') || e.message.includes('Not Found')
-                    ? 'Repository not found — check the username and repo name.'
-                    : e.message.includes('401') || e.message.includes('Bad credentials')
-                    ? 'Invalid token — make sure you copied the full PAT.'
-                    : 'Error: ' + e.message;
-                setStatus('setupStatus', msg, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Connect Repository';
-            }
-        }
-
-        // ── Load entries ─────────────────────────────────────────────────────
-        async function loadEntries() {
-            const cached = getCachedCSV();
-            if (cached) renderEntries(parseCSV(cached));
-
-            try {
-                const file = await getFile();
-                const freshCSV = file ? file.content : '';
-                if (freshCSV !== (cached || '')) {
-                    renderEntries(freshCSV ? parseCSV(freshCSV) : []);
-                    if (freshCSV) cacheCSV(freshCSV); else clearCache();
-                }
-            } catch (e) {
-                if (!cached) {
-                    document.getElementById('entriesContainer').innerHTML =
-                        `<p class="entries-empty" style="color:#dc3545">Failed to load: ${e.message}</p>`;
-                }
-            }
-        }
-
         // ── Submit weight ────────────────────────────────────────────────────
         let busy = false;
         async function submitWeight() {
@@ -772,7 +341,7 @@
                 cacheCSV(updated);
                 input.value = '';
 
-                let statusMsg = `✓ ${kg} kg logged`;
+                let statusMsg = `\u2713 ${kg} kg logged`;
                 if (prevRows.length > 0) {
                     const prevKg = parseFloat(prevRows[prevRows.length - 1].kg);
                     if (!isNaN(prevKg)) {
@@ -782,7 +351,7 @@
                         } else {
                             const sign = diff > 0 ? '+' : '\u2212';
                             const color = diff < 0 ? '#155724' : '#721c24';
-                            statusMsg = `✓ ${kg} kg logged (<span style="color:${color}">${sign}${Math.abs(diff).toFixed(1)} kg</span>)`;
+                            statusMsg = `\u2713 ${kg} kg logged (<span style="color:${color}">${sign}${Math.abs(diff).toFixed(1)} kg</span>)`;
                         }
                     }
                 }
@@ -798,23 +367,6 @@
         }
 
         // ── Delete entry ─────────────────────────────────────────────────────
-        function handleDelete(btn, ts, kg) {
-            if (btn.classList.contains('confirm')) {
-                btn.disabled = true;
-                btn.textContent = '...';
-                deleteEntry(ts, kg);
-                return;
-            }
-            btn.classList.add('confirm');
-            btn.textContent = 'Sure?';
-            setTimeout(() => {
-                if (btn && btn.isConnected && btn.classList.contains('confirm')) {
-                    btn.classList.remove('confirm');
-                    btn.innerHTML = '&times;';
-                }
-            }, 3000);
-        }
-
         async function deleteEntry(ts, kg) {
             setStatus('submitStatus', '');
             try {
@@ -828,9 +380,10 @@
                     if (lineTs === ts && lineKg === kg) { found = true; return false; }
                     return true;
                 });
-                if (!found) throw new Error('Entry not found — it may have already been deleted');
+                if (!found) throw new Error('Entry not found \u2014 it may have already been deleted');
                 const updated = kept.join('\n');
                 await putFile(updated, file.sha, `delete: ${kg}kg from ${ts.slice(0,10)}`);
+                cacheCSV(updated);
                 setStatus('submitStatus', 'Entry deleted', 'success');
                 await loadEntries();
             } catch (e) {

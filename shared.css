@@ -1,0 +1,310 @@
+/* shared.css — common styles for weight and fuel trackers
+   Each app sets CSS variables on :root:
+     --accent, --accent-hover, --gradient-1, --gradient-2,
+     --steps-bg, --steps-border, --container-max-width
+*/
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--gradient-1) 0%, var(--gradient-2) 100%);
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: var(--container-max-width, 400px);
+    width: 100%;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 28px;
+}
+
+.tracker-section { display: none; }
+.tracker-section.active { display: block; }
+
+/* Fields */
+.field { margin-bottom: 14px; }
+
+.field label {
+    display: block;
+    margin-bottom: 6px;
+    color: #555;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.field input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+    outline: none;
+    font-family: inherit;
+}
+
+.field input:focus { border-color: var(--accent); }
+
+/* Buttons */
+.btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn:hover { background: var(--accent-hover); }
+.btn:disabled { background: #ccc; cursor: not-allowed; }
+
+.btn-ghost {
+    width: auto;
+    padding: 7px 14px;
+    background: transparent;
+    color: #999;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.btn-ghost:hover { color: var(--accent); border-color: var(--accent); background: transparent; }
+.btn-ghost.danger:hover { color: #dc3545; border-color: #dc3545; }
+
+/* Status */
+.status {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+    display: none;
+}
+
+.status.success { background: #d4edda; color: #155724; display: block; }
+.status.error   { background: #f8d7da; color: #721c24; display: block; }
+
+/* User bar */
+.user-info {
+    text-align: center;
+    margin-bottom: 16px;
+    color: #666;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.user-info .repo-link {
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.user-info .repo-link:hover { text-decoration: underline; }
+
+/* Entries table */
+.entries-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.entries-table th {
+    text-align: left;
+    color: #aaa;
+    font-weight: 500;
+    padding: 0 6px 6px;
+    border-bottom: 1px solid #eee;
+    white-space: nowrap;
+}
+
+.entries-table th.num { text-align: right; }
+
+.entries-table td {
+    padding: 6px;
+    color: #444;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.entries-table tr:last-child td { border-bottom: none; }
+
+.entries-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.entries-table td.del-col {
+    width: 28px;
+    padding: 4px 2px 4px 4px;
+    text-align: center;
+}
+
+.del-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: color 0.2s, background 0.2s;
+}
+
+.del-btn:hover { color: #999; background: #f5f5f5; }
+.del-btn.confirm { color: #dc3545; font-size: 11px; font-weight: 600; background: #fff5f5; }
+
+.entries-empty {
+    text-align: center;
+    color: #bbb;
+    font-size: 13px;
+    padding: 12px 0;
+}
+
+/* Tabs */
+.tab-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 8px 0;
+    min-height: 44px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #eee;
+    border-radius: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: #aaa;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    width: auto;
+}
+
+.tab-btn:hover { color: var(--accent); border-bottom-color: var(--accent); background: transparent; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn:disabled { background: transparent; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Chart */
+.chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 220px;
+}
+
+.chart-empty {
+    text-align: center;
+    color: #bbb;
+    font-size: 13px;
+    padding: 60px 0;
+}
+
+.footer-actions {
+    margin-top: 16px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Spinner */
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Setup steps */
+.steps {
+    background: var(--steps-bg);
+    border: 1px solid var(--steps-border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+}
+
+.steps-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin-bottom: 10px;
+}
+
+.steps ol {
+    list-style: none;
+    counter-reset: step;
+    padding: 0;
+}
+
+.steps ol li {
+    counter-increment: step;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.6;
+    padding-left: 22px;
+    position: relative;
+    margin-bottom: 4px;
+}
+
+.steps ol li::before {
+    content: counter(step) ".";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.steps ol li a { color: var(--accent); }
+
+code {
+    background: #eee;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 12px;
+}

@@ -4,65 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fuel Tracker</title>
+    <link rel="stylesheet" href="shared.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --accent: #11998e;
+            --accent-hover: #0e7c73;
+            --gradient-1: #11998e;
+            --gradient-2: #38ef7d;
+            --steps-bg: #f0faf8;
+            --steps-border: #c8ede8;
+            --container-max-width: 540px;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 540px;
-            width: 100%;
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 28px;
-        }
-
-        .tracker-section { display: none; }
-        .tracker-section.active { display: block; }
-
-        /* Fields */
-        .field { margin-bottom: 14px; }
-
-        .field label {
-            display: block;
-            margin-bottom: 6px;
-            color: #555;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .field input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: border-color 0.3s;
-            outline: none;
-            font-family: inherit;
-        }
-
-        .field input:focus { border-color: #11998e; }
 
         .input-grid {
             display: grid;
@@ -79,75 +31,6 @@
             .input-grid { grid-template-columns: 1fr; }
             .input-grid .field.full { grid-column: 1; }
         }
-
-        /* Buttons */
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background: #11998e;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .btn:hover { background: #0e7c73; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-
-        .btn-ghost {
-            width: auto;
-            padding: 7px 14px;
-            background: transparent;
-            color: #999;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 400;
-            cursor: pointer;
-            transition: color 0.2s, border-color 0.2s;
-            display: inline-block;
-            text-decoration: none;
-        }
-
-        .btn-ghost:hover { color: #11998e; border-color: #11998e; background: transparent; }
-        .btn-ghost.danger:hover { color: #dc3545; border-color: #dc3545; }
-
-        /* Status */
-        .status {
-            margin-top: 12px;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 14px;
-            display: none;
-        }
-
-        .status.success { background: #d4edda; color: #155724; display: block; }
-        .status.error   { background: #f8d7da; color: #721c24; display: block; }
-
-        /* User bar */
-        .user-info {
-            text-align: center;
-            margin-bottom: 16px;
-            color: #666;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .user-info .repo-link {
-            font-size: 12px;
-            color: #11998e;
-            text-decoration: none;
-        }
-
-        .user-info .repo-link:hover { text-decoration: underline; }
 
         /* Car selector */
         .car-bar {
@@ -172,41 +55,10 @@
         .car-btn:hover { color: #11998e; border-color: #e0e0e0; }
         .car-btn.active { color: #11998e; background: #e8f8f5; border-color: #11998e; }
 
-        /* Entries table */
         .recent-entries {
             margin-top: 20px;
             border-top: 1px solid #eee;
             padding-top: 16px;
-        }
-
-        .entries-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-
-        .entries-table th {
-            text-align: left;
-            color: #aaa;
-            font-weight: 500;
-            padding: 0 6px 6px;
-            border-bottom: 1px solid #eee;
-            white-space: nowrap;
-        }
-
-        .entries-table th.num { text-align: right; }
-
-        .entries-table td {
-            padding: 6px;
-            color: #444;
-            border-bottom: 1px solid #f5f5f5;
-        }
-
-        .entries-table tr:last-child td { border-bottom: none; }
-
-        .entries-table td.num {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
         }
 
         .entries-table td.highlight {
@@ -214,151 +66,7 @@
             color: #11998e;
         }
 
-        .entries-table td.del-col {
-            width: 28px;
-            padding: 4px 2px 4px 4px;
-            text-align: center;
-        }
-
-        .del-btn {
-            background: none;
-            border: none;
-            color: #ccc;
-            font-size: 14px;
-            cursor: pointer;
-            padding: 2px 5px;
-            border-radius: 4px;
-            line-height: 1;
-            transition: color 0.2s, background 0.2s;
-        }
-
-        .del-btn:hover { color: #999; background: #f5f5f5; }
-        .del-btn.confirm { color: #dc3545; font-size: 11px; font-weight: 600; background: #fff5f5; }
-
-        .entries-empty {
-            text-align: center;
-            color: #bbb;
-            font-size: 13px;
-            padding: 12px 0;
-        }
-
-        /* Tabs */
-        .tab-bar {
-            display: flex;
-            gap: 4px;
-            margin-bottom: 12px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 8px 0;
-            min-height: 44px;
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid #eee;
-            border-radius: 0;
-            font-size: 13px;
-            font-weight: 500;
-            color: #aaa;
-            cursor: pointer;
-            transition: color 0.2s, border-color 0.2s;
-            width: auto;
-        }
-
-        .tab-btn:hover { color: #11998e; border-bottom-color: #11998e; background: transparent; }
-        .tab-btn.active { color: #11998e; border-bottom-color: #11998e; }
-        .tab-btn:disabled { background: transparent; }
-
-        .tab-panel { display: none; }
-        .tab-panel.active { display: block; }
-
-        /* Chart */
-        .chart-wrap {
-            position: relative;
-            width: 100%;
-            height: 240px;
-        }
-
-        .chart-empty {
-            text-align: center;
-            color: #bbb;
-            font-size: 13px;
-            padding: 60px 0;
-        }
-
-        .footer-actions {
-            margin-top: 16px;
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        /* Spinner */
-        .spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(255,255,255,0.4);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            vertical-align: middle;
-            margin-right: 6px;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Setup steps */
-        .steps {
-            background: #f0faf8;
-            border: 1px solid #c8ede8;
-            border-radius: 8px;
-            padding: 16px 18px;
-            margin-bottom: 24px;
-        }
-
-        .steps-title {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #888;
-            margin-bottom: 10px;
-        }
-
-        .steps ol {
-            list-style: none;
-            counter-reset: step;
-            padding: 0;
-        }
-
-        .steps ol li {
-            counter-increment: step;
-            font-size: 13px;
-            color: #555;
-            line-height: 1.6;
-            padding-left: 22px;
-            position: relative;
-            margin-bottom: 4px;
-        }
-
-        .steps ol li::before {
-            content: counter(step) ".";
-            position: absolute;
-            left: 0;
-            color: #11998e;
-            font-weight: 600;
-        }
-
-        .steps ol li a { color: #11998e; }
-
-        code {
-            background: #eee;
-            border-radius: 3px;
-            padding: 1px 5px;
-            font-size: 12px;
-        }
+        .chart-wrap { height: 240px; }
     </style>
 </head>
 <body>
@@ -457,90 +165,25 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="shared.js"></script>
     <script>
-        const API = 'https://api.github.com';
         const CARS = {
             i20: { file: 'fuel_i20.csv', cacheKey: 'fuelCache_i20', readOnly: true },
             i30: { file: 'fuel_i30.csv', cacheKey: 'fuelCache_i30', readOnly: false },
         };
 
-        let config = null;
         let activeCar = 'i30';
         let allRows = [];
         let activeTab = 'table';
         let fuelChart = null;
         let busy = false;
 
-        // ── Persistence ──────────────────────────────────────────────────────
-        // Note: The GitHub PAT is stored in plain text in localStorage. Without a backend
-        // there's no meaningfully better option. Use a fine-grained token scoped to a
-        // single repo to limit the blast radius.
-        function saveConfig(cfg) {
-            config = cfg;
-            localStorage.setItem('wtConfig', JSON.stringify(cfg));
-        }
-
-        function loadConfig() {
-            try {
-                const raw = localStorage.getItem('wtConfig');
-                if (raw) { config = JSON.parse(raw); return true; }
-            } catch (_) {}
-            return false;
-        }
-
-        function clearConfig() {
-            config = null;
-            localStorage.removeItem('wtConfig');
-        }
-
-        // ── CSV cache ────────────────────────────────────────────────────────
+        function dataFile() { return CARS[activeCar].file; }
         function cacheCSV(csv) { localStorage.setItem(CARS[activeCar].cacheKey, csv); }
         function getCachedCSV() { return localStorage.getItem(CARS[activeCar].cacheKey); }
+        function clearCache() { localStorage.removeItem(CARS[activeCar].cacheKey); }
         function clearAllCaches() {
             Object.values(CARS).forEach(c => localStorage.removeItem(c.cacheKey));
-        }
-
-        // ── GitHub API ───────────────────────────────────────────────────────
-        async function ghFetch(path, options = {}) {
-            const res = await fetch(`${API}${path}`, {
-                ...options,
-                headers: {
-                    Authorization: `Bearer ${config.pat}`,
-                    Accept: 'application/vnd.github+json',
-                    'X-GitHub-Api-Version': '2022-11-28',
-                    'Content-Type': 'application/json',
-                    ...(options.headers || {}),
-                },
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || `HTTP ${res.status}`);
-            }
-            return res.status === 204 ? null : res.json();
-        }
-
-        function dataFile() { return CARS[activeCar].file; }
-
-        async function getFile() {
-            try {
-                const data = await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${dataFile()}`);
-                const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
-                return { content, sha: data.sha };
-            } catch (e) {
-                if (e.message.includes('404') || e.message.includes('Not Found')) return null;
-                throw e;
-            }
-        }
-
-        async function putFile(content, sha, message) {
-            await ghFetch(`/repos/${config.owner}/${config.repo}/contents/${dataFile()}`, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    message,
-                    content: btoa(unescape(encodeURIComponent(content))),
-                    ...(sha ? { sha } : {}),
-                }),
-            });
         }
 
         // ── CSV helpers ──────────────────────────────────────────────────────
@@ -655,10 +298,7 @@
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                title: (items) => {
-                                    const r = withConsumption[items[0].dataIndex];
-                                    return r.datum;
-                                },
+                                title: (items) => withConsumption[items[0].dataIndex].datum,
                                 label: (item) => ` ${item.parsed.y.toFixed(2)} l/100km`,
                             },
                             backgroundColor: '#333',
@@ -685,14 +325,7 @@
             });
         }
 
-        // ── UI helpers ───────────────────────────────────────────────────────
-        function setStatus(id, msg, type = '') {
-            const el = document.getElementById(id);
-            el.innerHTML = msg;
-            el.className = `status ${type}`;
-            if (type === 'success') setTimeout(() => { el.textContent = ''; el.className = 'status'; }, 3000);
-        }
-
+        // ── Render entries ────────────────────────────────────────────────────
         function renderEntries(rows) {
             const sorted = computeDerived(rows);
             allRows = sorted;
@@ -774,8 +407,8 @@
                 });
                 table.appendChild(tbody);
                 c.appendChild(table);
-
             }
+
             // Populate station autocomplete from all entries across both cars
             const dl = document.getElementById('stationList');
             dl.textContent = '';
@@ -800,74 +433,7 @@
             document.getElementById('userBar').textContent = `${config.owner} / ${config.repo}`;
             document.getElementById('repoLink').href =
                 `https://github.com/${config.owner}/${config.repo}`;
-            // Default date to today
             document.getElementById('datumInput').value = new Date().toISOString().slice(0, 10);
-        }
-
-        function showSetup() {
-            document.getElementById('setupSection').style.display = 'block';
-            document.getElementById('trackerSection').classList.remove('active');
-        }
-
-        // ── Connect ──────────────────────────────────────────────────────────
-        async function connect() {
-            const pat   = document.getElementById('patInput').value.trim();
-            const owner = document.getElementById('ownerInput').value.trim();
-            const repo  = document.getElementById('repoInput').value.trim();
-
-            if (!pat || !owner || !repo) {
-                setStatus('setupStatus', 'Please fill in all three fields.', 'error');
-                return;
-            }
-
-            const btn = document.getElementById('connectBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span>Verifying\u2026';
-            setStatus('setupStatus', '');
-
-            try {
-                config = { pat, owner, repo };
-                await ghFetch(`/repos/${owner}/${repo}`);
-                saveConfig({ pat, owner, repo });
-                showTracker();
-                await loadEntries();
-            } catch (e) {
-                config = null;
-                const msg = e.message.includes('404') || e.message.includes('Not Found')
-                    ? 'Repository not found \u2014 check the username and repo name.'
-                    : e.message.includes('401') || e.message.includes('Bad credentials')
-                    ? 'Invalid token \u2014 make sure you copied the full PAT.'
-                    : 'Error: ' + e.message;
-                setStatus('setupStatus', msg, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Connect Repository';
-            }
-        }
-
-        // ── Load entries ─────────────────────────────────────────────────────
-        async function loadEntries() {
-            const cached = getCachedCSV();
-            if (cached) renderEntries(parseCSV(cached));
-
-            try {
-                const file = await getFile();
-                const freshCSV = file ? file.content : '';
-                if (freshCSV !== (cached || '')) {
-                    renderEntries(freshCSV ? parseCSV(freshCSV) : []);
-                    if (freshCSV) cacheCSV(freshCSV); else localStorage.removeItem(CARS[activeCar].cacheKey);
-                }
-            } catch (e) {
-                if (!cached) {
-                    const c = document.getElementById('entriesContainer');
-                    c.textContent = '';
-                    const p = document.createElement('p');
-                    p.className = 'entries-empty';
-                    p.style.color = '#dc3545';
-                    p.textContent = 'Failed to load: ' + e.message;
-                    c.appendChild(p);
-                }
-            }
         }
 
         // ── Submit ───────────────────────────────────────────────────────────
@@ -912,23 +478,6 @@
         }
 
         // ── Delete entry ─────────────────────────────────────────────────────
-        function handleDelete(btn, datum, km) {
-            if (btn.classList.contains('confirm')) {
-                btn.disabled = true;
-                btn.textContent = '...';
-                deleteEntry(datum, km);
-                return;
-            }
-            btn.classList.add('confirm');
-            btn.textContent = 'Sure?';
-            setTimeout(() => {
-                if (btn && btn.isConnected && btn.classList.contains('confirm')) {
-                    btn.classList.remove('confirm');
-                    btn.innerHTML = '&times;';
-                }
-            }, 3000);
-        }
-
         async function deleteEntry(datum, km) {
             setStatus('submitStatus', '');
             try {
