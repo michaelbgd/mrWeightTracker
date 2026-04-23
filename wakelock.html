@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keep Awake</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #111;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  button {
+    font-size: 1.25rem;
+    padding: 0.9rem 2rem;
+    border: none;
+    border-radius: 999px;
+    background: #3b82f6;
+    color: white;
+    cursor: pointer;
+  }
+  button[aria-pressed="true"] {
+    background: #ef4444;
+  }
+  button:disabled {
+    background: #555;
+    cursor: not-allowed;
+  }
+  #status {
+    font-size: 1rem;
+    opacity: 0.8;
+    text-align: center;
+    padding: 0 1rem;
+  }
+  #dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #555;
+    transition: background 0.2s;
+  }
+  #dot.on {
+    background: #22c55e;
+    box-shadow: 0 0 12px #22c55e;
+  }
+</style>
+</head>
+<body>
+  <div id="dot"></div>
+  <button id="toggle">Keep screen awake</button>
+  <div id="status">Idle</div>
+
+<script>
+  const btn = document.getElementById('toggle');
+  const statusEl = document.getElementById('status');
+  const dot = document.getElementById('dot');
+  let wakeLock = null;
+  let userWants = true;
+
+  function setUI(active, message) {
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.textContent = active ? 'Release wake lock' : 'Keep screen awake';
+    dot.classList.toggle('on', active);
+    if (message) statusEl.textContent = message;
+  }
+
+  async function requestLock() {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      setUI(true, 'Screen will stay awake while this tab is visible.');
+      wakeLock.addEventListener('release', () => {
+        wakeLock = null;
+        setUI(false, document.visibilityState === 'visible' ? 'Wake lock released.' : 'Released because tab is hidden.');
+      });
+    } catch (err) {
+      wakeLock = null;
+      setUI(false, 'Tap the button to enable (' + err.name + ').');
+      throw err;
+    }
+  }
+
+  async function releaseLock() {
+    if (wakeLock) {
+      await wakeLock.release();
+      wakeLock = null;
+    }
+  }
+
+  if (!('wakeLock' in navigator)) {
+    btn.disabled = true;
+    statusEl.textContent = 'Wake Lock API not supported in this browser.';
+  } else {
+    btn.addEventListener('click', () => {
+      if (wakeLock) {
+        userWants = false;
+        releaseLock();
+      } else {
+        userWants = true;
+        requestLock().catch(() => {});
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && userWants && wakeLock === null) {
+        requestLock().catch(() => {});
+      }
+    });
+
+    requestLock().catch(() => {});
+  }
+</script>
+</body>
+</html>
