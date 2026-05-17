@@ -39,7 +39,50 @@
             font-weight: 600;
             color: #667eea;
         }
-    </style>
+
+        .chart-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .chart-nav { display: flex; align-items: center; gap: 8px; }
+        .chart-nav button {
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            font-size: 18px;
+            cursor: pointer;
+            color: #555;
+        }
+        .chart-nav button:hover { background: #e4e4e4; }
+        .chart-range-label {
+            font-weight: 600;
+            color: #444;
+            font-size: 14px;
+            min-width: 120px;
+            text-align: center;
+        }
+        .chart-range-buttons { display: flex; gap: 4px; }
+        .chart-range-buttons button {
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            color: #555;
+            font-weight: 500;
+        }
+        .chart-range-buttons button.active {
+            background: var(--accent);
+            color: #fff;
+        }
+</style>
 </head>
 <body>
     <div class="container">
@@ -100,6 +143,18 @@
                     <div id="entriesContainer"><p class="entries-empty">Loading&hellip;</p></div>
                 </div>
                 <div class="tab-panel" id="panelChart">
+                    <div class="chart-controls">
+                        <div class="chart-nav">
+                            <button id="chartPrev" aria-label="Previous">&larr;</button>
+                            <span class="chart-range-label" id="chartRangeLabel"></span>
+                            <button id="chartNext" aria-label="Next">&rarr;</button>
+                        </div>
+                        <div class="chart-range-buttons">
+                            <button data-range="week">Week</button>
+                            <button data-range="month" class="active">Month</button>
+                            <button data-range="year">Year</button>
+                        </div>
+                    </div>
                     <div class="chart-wrap">
                         <canvas id="weightChart"></canvas>
                     </div>
@@ -157,6 +212,9 @@
         let weightChart = null;
         let allRows = [];
         let activeTab = 'table';
+        let chartRange = 'month';
+        let chartAnchor = new Date();
+        let anchorInitialized = false;
 
         function switchTab(tab) {
             activeTab = tab;
@@ -167,18 +225,70 @@
             if (tab === 'chart') renderChart(allRows);
         }
 
+        function rangeBounds(range, anchor) {
+            const d = new Date(anchor);
+            let start, end, label;
+            if (range === 'week') {
+                const dow = (d.getDay() + 6) % 7;
+                start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow);
+                end = new Date(start); end.setDate(start.getDate() + 7);
+                const lastDay = new Date(end); lastDay.setDate(end.getDate() - 1);
+                const fmt = { month: 'short', day: 'numeric' };
+                label = start.toLocaleDateString(undefined, fmt) + ' – ' + lastDay.toLocaleDateString(undefined, fmt);
+            } else if (range === 'month') {
+                start = new Date(d.getFullYear(), d.getMonth(), 1);
+                end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+                label = start.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+            } else {
+                start = new Date(d.getFullYear(), 0, 1);
+                end = new Date(d.getFullYear() + 1, 0, 1);
+                label = String(d.getFullYear());
+            }
+            return { start, end, label };
+        }
+
+        function shiftAnchor(direction) {
+            const d = new Date(chartAnchor);
+            if (chartRange === 'week') d.setDate(d.getDate() + 7 * direction);
+            else if (chartRange === 'month') d.setMonth(d.getMonth() + direction);
+            else d.setFullYear(d.getFullYear() + direction);
+            chartAnchor = d;
+            renderChart(allRows);
+        }
+
         function renderChart(rows) {
             const wrap = document.querySelector('.chart-wrap');
             const empty = document.getElementById('chartEmpty');
-            if (rows.length < 2) {
+
+            if (!anchorInitialized && rows.length) {
+                const latest = rows.reduce((m, r) => {
+                    const t = new Date(r.ts);
+                    return (!m || t > m) ? t : m;
+                }, null);
+                if (latest) { chartAnchor = latest; anchorInitialized = true; }
+            }
+
+            const { start, end, label } = rangeBounds(chartRange, chartAnchor);
+            document.getElementById('chartRangeLabel').textContent = label;
+
+            const inRange = rows.filter(r => {
+                const t = new Date(r.ts);
+                return t >= start && t < end;
+            });
+
+            if (inRange.length < 2) {
                 wrap.style.display = 'none';
                 empty.style.display = 'block';
+                empty.textContent = rows.length < 2
+                    ? 'Log at least 2 entries to see a chart.'
+                    : 'No entries in this range.';
+                if (weightChart) { weightChart.destroy(); weightChart = null; }
                 return;
             }
             wrap.style.display = 'block';
             empty.style.display = 'none';
 
-            const sorted = [...rows].sort((a, b) => new Date(a.ts) - new Date(b.ts));
+            const sorted = [...inRange].sort((a, b) => new Date(a.ts) - new Date(b.ts));
             const labels = sorted.map(r => {
                 try {
                     return new Date(r.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -417,6 +527,18 @@
         });
         document.getElementById('repoInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') connect();
+        });
+
+        document.getElementById('chartPrev').addEventListener('click', () => shiftAnchor(-1));
+        document.getElementById('chartNext').addEventListener('click', () => shiftAnchor(1));
+        document.querySelectorAll('.chart-range-buttons button').forEach(b => {
+            b.addEventListener('click', () => {
+                chartRange = b.dataset.range;
+                document.querySelectorAll('.chart-range-buttons button').forEach(x => {
+                    x.classList.toggle('active', x === b);
+                });
+                renderChart(allRows);
+            });
         });
 
         if (loadConfig()) {
