@@ -44,36 +44,37 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 12px;
             flex-wrap: wrap;
         }
-        .chart-nav { display: flex; align-items: center; gap: 8px; }
+        .chart-nav { display: flex; align-items: center; gap: 6px; }
         .chart-nav button {
             background: #f0f0f0;
             border: none;
-            border-radius: 8px;
-            width: 32px;
-            height: 32px;
-            font-size: 18px;
+            border-radius: 6px;
+            width: 26px;
+            height: 26px;
+            font-size: 14px;
             cursor: pointer;
             color: #555;
         }
         .chart-nav button:hover { background: #e4e4e4; }
+        .chart-nav button:disabled { opacity: 0.4; cursor: default; }
         .chart-range-label {
             font-weight: 600;
             color: #444;
-            font-size: 14px;
-            min-width: 120px;
+            font-size: 12px;
+            min-width: 90px;
             text-align: center;
         }
-        .chart-range-buttons { display: flex; gap: 4px; }
+        .chart-range-buttons { display: flex; gap: 3px; }
         .chart-range-buttons button {
             background: #f0f0f0;
             border: none;
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 13px;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
             cursor: pointer;
             color: #555;
             font-weight: 500;
@@ -153,6 +154,7 @@
                             <button data-range="week">Week</button>
                             <button data-range="month" class="active">Month</button>
                             <button data-range="year">Year</button>
+                            <button data-range="all">All</button>
                         </div>
                     </div>
                     <div class="chart-wrap">
@@ -239,10 +241,14 @@
                 start = new Date(d.getFullYear(), d.getMonth(), 1);
                 end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
                 label = start.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-            } else {
+            } else if (range === 'year') {
                 start = new Date(d.getFullYear(), 0, 1);
                 end = new Date(d.getFullYear() + 1, 0, 1);
                 label = String(d.getFullYear());
+            } else {
+                start = new Date(0);
+                end = new Date(8640000000000000);
+                label = 'All time';
             }
             return { start, end, label };
         }
@@ -270,6 +276,9 @@
 
             const { start, end, label } = rangeBounds(chartRange, chartAnchor);
             document.getElementById('chartRangeLabel').textContent = label;
+            const navDisabled = chartRange === 'all';
+            document.getElementById('chartPrev').disabled = navDisabled;
+            document.getElementById('chartNext').disabled = navDisabled;
 
             const inRange = rows.filter(r => {
                 const t = new Date(r.ts);
