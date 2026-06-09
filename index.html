@@ -151,9 +151,9 @@
                             <button id="chartNext" aria-label="Next">&rarr;</button>
                         </div>
                         <div class="chart-range-buttons">
-                            <button data-range="week">Week</button>
-                            <button data-range="month" class="active">Month</button>
-                            <button data-range="year">Year</button>
+                            <button data-range="week">7d</button>
+                            <button data-range="month" class="active">30d</button>
+                            <button data-range="year">YTD</button>
                             <button data-range="all">All</button>
                         </div>
                     </div>
@@ -229,22 +229,21 @@
 
         function rangeBounds(range, anchor) {
             const d = new Date(anchor);
+            const anchorDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
             let start, end, label;
+            const fmt = { month: 'short', day: 'numeric' };
             if (range === 'week') {
-                const dow = (d.getDay() + 6) % 7;
-                start = new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow);
-                end = new Date(start); end.setDate(start.getDate() + 7);
-                const lastDay = new Date(end); lastDay.setDate(end.getDate() - 1);
-                const fmt = { month: 'short', day: 'numeric' };
-                label = start.toLocaleDateString(undefined, fmt) + ' – ' + lastDay.toLocaleDateString(undefined, fmt);
+                end = new Date(anchorDay); end.setDate(anchorDay.getDate() + 1);
+                start = new Date(anchorDay); start.setDate(anchorDay.getDate() - 6);
+                label = start.toLocaleDateString(undefined, fmt) + ' – ' + anchorDay.toLocaleDateString(undefined, fmt);
             } else if (range === 'month') {
-                start = new Date(d.getFullYear(), d.getMonth(), 1);
-                end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-                label = start.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+                end = new Date(anchorDay); end.setDate(anchorDay.getDate() + 1);
+                start = new Date(anchorDay); start.setDate(anchorDay.getDate() - 29);
+                label = start.toLocaleDateString(undefined, fmt) + ' – ' + anchorDay.toLocaleDateString(undefined, fmt);
             } else if (range === 'year') {
+                end = new Date(anchorDay); end.setDate(anchorDay.getDate() + 1);
                 start = new Date(d.getFullYear(), 0, 1);
-                end = new Date(d.getFullYear() + 1, 0, 1);
-                label = String(d.getFullYear());
+                label = 'YTD ' + d.getFullYear();
             } else {
                 start = new Date(0);
                 end = new Date(8640000000000000);
@@ -256,7 +255,7 @@
         function shiftAnchor(direction) {
             const d = new Date(chartAnchor);
             if (chartRange === 'week') d.setDate(d.getDate() + 7 * direction);
-            else if (chartRange === 'month') d.setMonth(d.getMonth() + direction);
+            else if (chartRange === 'month') d.setDate(d.getDate() + 30 * direction);
             else d.setFullYear(d.getFullYear() + direction);
             chartAnchor = d;
             renderChart(allRows);
