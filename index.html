@@ -120,16 +120,10 @@
 
         <!-- Tracker screen -->
         <div class="tracker-section" id="trackerSection">
-            <div class="user-info">
-                <span id="userBar"></span>
-                <a href="#" class="repo-link" id="repoLink" target="_blank">&nearr; open repo</a>
-                <button class="refresh-btn" id="refreshBtn"><span class="refresh-icon">&#8635;</span> refresh</button>
-            </div>
-
             <div class="weight-row">
                 <div class="field">
                     <label for="weightInput">Weight (kg)</label>
-                    <input type="number" id="weightInput" step="0.1" placeholder="e.g., 75.5">
+                    <input type="number" id="weightInput" step="0.1" inputmode="decimal" placeholder="e.g., 75.5">
                 </div>
                 <button class="btn" id="submitBtn">Log</button>
             </div>
@@ -167,6 +161,7 @@
 
             <div class="footer-actions">
                 <a href="fuel.html" class="btn-ghost">Fuel Tracker</a>
+                <button class="btn-ghost refresh-btn" id="refreshBtn" title="Refresh" aria-label="Refresh"><span class="refresh-icon">&#8635;</span></button>
                 <button class="btn-ghost danger" id="disconnectBtn">Disconnect</button>
             </div>
         </div>
@@ -428,9 +423,6 @@
         function showTracker() {
             document.getElementById('setupSection').style.display = 'none';
             document.getElementById('trackerSection').classList.add('active');
-            document.getElementById('userBar').textContent = `${config.owner} / ${config.repo}`;
-            document.getElementById('repoLink').href =
-                `https://github.com/${config.owner}/${config.repo}/blob/main/${DATA_FILE}`;
         }
 
         // ── Submit weight ────────────────────────────────────────────────────

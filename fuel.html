@@ -116,12 +116,6 @@
 
         <!-- Tracker screen -->
         <div class="tracker-section" id="trackerSection">
-            <div class="user-info">
-                <span id="userBar"></span>
-                <a href="#" class="repo-link" id="repoLink" target="_blank">&nearr; open repo</a>
-                <button class="refresh-btn" id="refreshBtn"><span class="refresh-icon">&#8635;</span> refresh</button>
-            </div>
-
             <div class="car-bar">
                 <button class="car-btn" id="carI20" onclick="switchCar('i20')">i20</button>
                 <button class="car-btn active" id="carI30" onclick="switchCar('i30')">i30</button>
@@ -172,6 +166,7 @@
 
             <div class="footer-actions">
                 <a href="index.html" class="btn-ghost">Weight Tracker</a>
+                <button class="btn-ghost refresh-btn" id="refreshBtn" title="Refresh" aria-label="Refresh"><span class="refresh-icon">&#8635;</span></button>
                 <button class="btn-ghost danger" id="disconnectBtn">Disconnect</button>
             </div>
         </div>
@@ -443,9 +438,6 @@
         function showTracker() {
             document.getElementById('setupSection').style.display = 'none';
             document.getElementById('trackerSection').classList.add('active');
-            document.getElementById('userBar').textContent = `${config.owner} / ${config.repo}`;
-            document.getElementById('repoLink').href =
-                `https://github.com/${config.owner}/${config.repo}`;
             document.getElementById('datumInput').value = new Date().toISOString().slice(0, 10);
         }
 
