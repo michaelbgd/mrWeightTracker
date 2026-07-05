@@ -132,6 +132,28 @@ h1 {
 
 .user-info .repo-link:hover { text-decoration: underline; }
 
+.user-info .refresh-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--accent);
+    cursor: pointer;
+}
+
+.user-info .refresh-btn:hover { text-decoration: underline; }
+.user-info .refresh-btn:disabled { opacity: 0.5; cursor: default; }
+
+.user-info .refresh-btn.spinning .refresh-icon {
+    display: inline-block;
+    animation: refresh-spin 0.8s linear infinite;
+}
+
+@keyframes refresh-spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Entries table */
 .entries-table {
     width: 100%;

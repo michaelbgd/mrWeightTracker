@@ -30,6 +30,7 @@ function clearConfig() {
 // ── GitHub API ───────────────────────────────────────────────────────
 async function ghFetch(path, options = {}) {
     const res = await fetch(`${API}${path}`, {
+        cache: 'no-store',
         ...options,
         headers: {
             Authorization: `Bearer ${config.pat}`,
@@ -133,6 +134,19 @@ function handleDelete(btn, a, b) {
             btn.innerHTML = '&times;';
         }
     }, 3000);
+}
+
+// ── Manual refresh ───────────────────────────────────────────────────
+async function refreshEntries() {
+    const btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    btn.classList.add('spinning');
+    try {
+        await loadEntries();
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('spinning');
+    }
 }
 
 // ── Load entries (with cache) ────────────────────────────────────────

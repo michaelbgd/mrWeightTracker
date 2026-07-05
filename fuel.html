@@ -119,6 +119,7 @@
             <div class="user-info">
                 <span id="userBar"></span>
                 <a href="#" class="repo-link" id="repoLink" target="_blank">&nearr; open repo</a>
+                <button class="refresh-btn" id="refreshBtn"><span class="refresh-icon">&#8635;</span> refresh</button>
             </div>
 
             <div class="car-bar">
@@ -479,7 +480,7 @@
                 document.getElementById('literInput').value = '';
                 document.getElementById('preisInput').value = '';
                 setStatus('submitStatus', `\u2713 ${liter} L logged`, 'success');
-                await loadEntries();
+                renderEntries(parseCSV(updated));
             } catch (e) {
                 setStatus('submitStatus', 'Failed: ' + e.message, 'error');
             } finally {
@@ -508,7 +509,7 @@
                 await putFile(updated, file.sha, `delete fuel ${activeCar}: ${datum}`);
                 cacheCSV(updated);
                 setStatus('submitStatus', 'Entry deleted', 'success');
-                await loadEntries();
+                renderEntries(parseCSV(updated));
             } catch (e) {
                 setStatus('submitStatus', 'Delete failed: ' + e.message, 'error');
             }
@@ -529,6 +530,7 @@
         document.getElementById('connectBtn').addEventListener('click', connect);
         document.getElementById('submitBtn').addEventListener('click', submitFuel);
         document.getElementById('disconnectBtn').addEventListener('click', disconnect);
+        document.getElementById('refreshBtn').addEventListener('click', refreshEntries);
         document.getElementById('literInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') document.getElementById('preisInput').focus();
         });
