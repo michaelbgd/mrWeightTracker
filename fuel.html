@@ -38,6 +38,19 @@
         .input-grid .field { margin-bottom: 0; }
         .input-grid .field.full { grid-column: 1 / -1; }
 
+        .checkbox-field label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        .checkbox-field input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #11998e;
+        }
+
         @media (max-width: 440px) {
             .container { padding: 24px 18px; }
             .input-grid { grid-template-columns: 1fr; }
@@ -143,6 +156,9 @@
                     <input type="text" id="stationInput" placeholder="e.g. Jet / Salzburg" list="stationList">
                     <datalist id="stationList"></datalist>
                 </div>
+                <div class="field full checkbox-field">
+                    <label><input type="checkbox" id="partialInput"> Nicht vollgetankt</label>
+                </div>
             </div>
 
             <button class="btn" id="submitBtn">Log</button>
@@ -206,33 +222,40 @@
                     liter: parts[2]?.trim(),
                     preis: parts[3]?.trim(),
                     tankstelle: parts[4]?.trim(),
+                    partial: parts[5]?.trim() === '1',
                 };
             });
         }
 
-        function appendRow(existing, datum, km, liter, preis, tankstelle) {
-            const header = 'datum,km_stand,liter,preis,tankstelle\n';
+        function appendRow(existing, datum, km, liter, preis, tankstelle, partial) {
+            const header = 'datum,km_stand,liter,preis,tankstelle,partial\n';
             const base = existing ? existing.replace(/\r/g, '') : header;
             const ensured = base.startsWith('datum') ? base : header + base;
-            return ensured.trimEnd() + `\n${datum},${km},${liter},${preis},${tankstelle}\n`;
+            const lines = ensured.trimEnd().split('\n');
+            if (!lines[0].includes('partial')) lines[0] += ',partial';
+            lines.push(`${datum},${km},${liter},${preis},${tankstelle},${partial ? '1' : ''}`);
+            return lines.join('\n') + '\n';
         }
 
         // ── Derived fields ───────────────────────────────────────────────────
         function computeDerived(rows) {
             const sorted = [...rows].sort((a, b) => a.datum.localeCompare(b.datum));
-            for (let i = 0; i < sorted.length; i++) {
-                const km = parseFloat(sorted[i].km_stand);
-                const liter = parseFloat(sorted[i].liter);
-                const preis = parseFloat(sorted[i].preis);
-                sorted[i].preis_l = liter > 0 ? (preis / liter) : null;
-                if (i > 0) {
-                    const prevKm = parseFloat(sorted[i - 1].km_stand);
-                    const diff = km - prevKm;
-                    sorted[i].km_diff = diff > 0 ? diff : null;
-                    sorted[i].l_100km = diff > 0 && liter > 0 ? (liter / diff * 100) : null;
+            let lastFullKm = null;
+            let partialLiters = 0;
+            for (const row of sorted) {
+                const km = parseFloat(row.km_stand);
+                const liter = parseFloat(row.liter);
+                const preis = parseFloat(row.preis);
+                row.preis_l = liter > 0 ? (preis / liter) : null;
+                row.l_100km = null;
+                if (row.partial) {
+                    if (liter > 0) partialLiters += liter;
                 } else {
-                    sorted[i].km_diff = null;
-                    sorted[i].l_100km = null;
+                    const diff = lastFullKm != null ? km - lastFullKm : 0;
+                    const totalLiter = partialLiters + (liter > 0 ? liter : 0);
+                    if (diff > 0 && totalLiter > 0) row.l_100km = totalLiter / diff * 100;
+                    lastFullKm = km;
+                    partialLiters = 0;
                 }
             }
             return sorted;
@@ -381,7 +404,8 @@
 
                     const tdLiter = document.createElement('td');
                     tdLiter.className = 'num';
-                    tdLiter.textContent = row.liter;
+                    tdLiter.textContent = row.partial ? row.liter + '*' : row.liter;
+                    if (row.partial) tdLiter.title = 'Nicht vollgetankt';
                     tr.appendChild(tdLiter);
 
                     const tdPreis = document.createElement('td');
@@ -451,6 +475,7 @@
             const liter = document.getElementById('literInput').value.trim();
             const preis = document.getElementById('preisInput').value.trim();
             const station = document.getElementById('stationInput').value.trim();
+            const partial = document.getElementById('partialInput').checked;
 
             if (!datum || !km || !liter || !preis) {
                 setStatus('submitStatus', 'Please fill in date, km, liters, and price.', 'error');
@@ -465,12 +490,13 @@
 
             try {
                 const file = await getFile();
-                const updated = appendRow(file?.content ?? null, datum, km, liter, preis, station);
-                await putFile(updated, file?.sha ?? null, `fuel ${activeCar}: ${liter}L on ${datum}`);
+                const updated = appendRow(file?.content ?? null, datum, km, liter, preis, station, partial);
+                await putFile(updated, file?.sha ?? null, `fuel ${activeCar}: ${liter}L on ${datum}${partial ? ' (partial)' : ''}`);
                 cacheCSV(updated);
                 document.getElementById('kmInput').value = '';
                 document.getElementById('literInput').value = '';
                 document.getElementById('preisInput').value = '';
+                document.getElementById('partialInput').checked = false;
                 setStatus('submitStatus', `\u2713 ${liter} L logged`, 'success');
                 renderEntries(parseCSV(updated));
             } catch (e) {
