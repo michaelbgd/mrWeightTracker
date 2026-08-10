@@ -92,6 +92,57 @@
         }
 
         .chart-wrap { height: 240px; }
+
+        .prices-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+        }
+
+        .prices-head .prices-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #888;
+        }
+
+        .prices-head .prices-updated { font-size: 11px; color: #bbb; }
+
+        .station {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 6px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .station:last-child { border-bottom: none; }
+        .station .info { min-width: 0; }
+
+        .station .name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .station .sub { font-size: 11px; color: #aaa; }
+        .station.closed .name { color: #aaa; }
+
+        .station .price {
+            font-size: 15px;
+            font-weight: 600;
+            color: #444;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .station.cheapest .price { color: #11998e; }
     </style>
 </head>
 <body>
@@ -168,6 +219,7 @@
                 <div class="tab-bar">
                     <button class="tab-btn active" id="tabTable" onclick="switchTab('table')">Table</button>
                     <button class="tab-btn" id="tabChart" onclick="switchTab('chart')">Chart</button>
+                    <button class="tab-btn" id="tabPrices" onclick="switchTab('prices')">Prices</button>
                 </div>
                 <div class="tab-panel active" id="panelTable">
                     <div id="entriesContainer"><p class="entries-empty">Loading&hellip;</p></div>
@@ -177,6 +229,13 @@
                         <canvas id="fuelChart"></canvas>
                     </div>
                     <p class="chart-empty" id="chartEmpty" style="display:none">Log at least 2 entries to see a chart.</p>
+                </div>
+                <div class="tab-panel" id="panelPrices">
+                    <div class="prices-head">
+                        <span class="prices-title">Super 95 &middot; nearby</span>
+                        <span class="prices-updated" id="pricesUpdated"></span>
+                    </div>
+                    <div id="pricesContainer"><p class="entries-empty">Loading&hellip;</p></div>
                 </div>
             </div>
 
@@ -273,13 +332,104 @@
         }
 
         // ── Tabs ─────────────────────────────────────────────────────────────
+        const TABS = { table: 'Table', chart: 'Chart', prices: 'Prices' };
+
         function switchTab(tab) {
             activeTab = tab;
-            document.getElementById('tabTable').classList.toggle('active', tab === 'table');
-            document.getElementById('tabChart').classList.toggle('active', tab === 'chart');
-            document.getElementById('panelTable').classList.toggle('active', tab === 'table');
-            document.getElementById('panelChart').classList.toggle('active', tab === 'chart');
+            Object.keys(TABS).forEach(t => {
+                document.getElementById('tab' + TABS[t]).classList.toggle('active', t === tab);
+                document.getElementById('panel' + TABS[t]).classList.toggle('active', t === tab);
+            });
             if (tab === 'chart') renderChart(allRows);
+            if (tab === 'prices') loadPrices();
+        }
+
+        // ── Fuel prices ──────────────────────────────────────────────────────
+        const PRICES_API = 'https://spritpreisrechner.at/api/search/gas-stations/by-address'
+            + '?latitude=47.738264000000015&longitude=13.062144&fuelType=SUP&includeClosed=true';
+        const PRICES_MAX_AGE_MS = 5 * 60 * 1000;
+
+        let pricesLoadedAt = 0;
+        let pricesBusy = false;
+
+        function priceOf(station) {
+            const p = (station.prices || []).find(x => x.fuelType === 'SUP');
+            return p ? p.amount : null;
+        }
+
+        function setPricesMessage(text) {
+            const c = document.getElementById('pricesContainer');
+            c.textContent = '';
+            const p = document.createElement('p');
+            p.className = 'entries-empty';
+            p.textContent = text;
+            c.appendChild(p);
+        }
+
+        function renderPrices(stations) {
+            const c = document.getElementById('pricesContainer');
+            const withPrice = stations
+                .map(s => ({ s, price: priceOf(s) }))
+                .filter(x => x.price != null)
+                .sort((a, b) => a.price - b.price);
+
+            if (!withPrice.length) {
+                setPricesMessage('No prices available.');
+                return;
+            }
+
+            const minPrice = withPrice[0].price;
+            c.textContent = '';
+            withPrice.forEach(({ s, price }) => {
+                const row = document.createElement('div');
+                row.className = 'station' + (s.open ? '' : ' closed') + (price === minPrice ? ' cheapest' : '');
+
+                const info = document.createElement('div');
+                info.className = 'info';
+
+                const name = document.createElement('div');
+                name.className = 'name';
+                name.textContent = s.name + (s.open ? '' : ' (closed)');
+                info.appendChild(name);
+
+                const sub = document.createElement('div');
+                sub.className = 'sub';
+                const loc = s.location || {};
+                const dist = typeof s.distance === 'number' ? s.distance.toFixed(1) + ' km · ' : '';
+                sub.textContent = dist + [loc.city, loc.address].filter(Boolean).join(', ');
+                info.appendChild(sub);
+
+                const priceEl = document.createElement('div');
+                priceEl.className = 'price';
+                priceEl.textContent = '€ ' + price.toFixed(3);
+
+                row.appendChild(info);
+                row.appendChild(priceEl);
+                c.appendChild(row);
+            });
+
+            document.getElementById('pricesUpdated').textContent =
+                new Date(pricesLoadedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function loadPrices(force = false) {
+            if (pricesBusy) return;
+            if (!force && pricesLoadedAt && Date.now() - pricesLoadedAt < PRICES_MAX_AGE_MS) return;
+
+            pricesBusy = true;
+            setPricesMessage('Loading…');
+            try {
+                const res = await fetch(PRICES_API, { headers: { Accept: 'application/json' } });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                pricesLoadedAt = Date.now();
+                renderPrices(Array.isArray(data) ? data : []);
+            } catch (e) {
+                pricesLoadedAt = 0;
+                setPricesMessage('Failed to load prices.');
+            } finally {
+                pricesBusy = false;
+            }
         }
 
         // ── Chart ────────────────────────────────────────────────────────────
@@ -548,7 +698,18 @@
         document.getElementById('connectBtn').addEventListener('click', connect);
         document.getElementById('submitBtn').addEventListener('click', submitFuel);
         document.getElementById('disconnectBtn').addEventListener('click', disconnect);
-        document.getElementById('refreshBtn').addEventListener('click', refreshEntries);
+        document.getElementById('refreshBtn').addEventListener('click', async () => {
+            if (activeTab !== 'prices') return refreshEntries();
+            const btn = document.getElementById('refreshBtn');
+            btn.disabled = true;
+            btn.classList.add('spinning');
+            try {
+                await loadPrices(true);
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('spinning');
+            }
+        });
         document.getElementById('literInput').addEventListener('keypress', e => {
             if (e.key === 'Enter') document.getElementById('preisInput').focus();
         });
